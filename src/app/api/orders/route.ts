@@ -144,37 +144,40 @@ export async function POST(request: NextRequest) {
 
 // GET - Fetch user's orders
 export async function GET() {
-    try {
-      const session = await getServerSession(authOptions)
-  
-      if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-  
-      const orders = await prisma.order.findMany({
-        where: {
-          userId: session.user.id
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        include: {
-          orderItems: {
-            include: {
-              product: true
-            }
-          },
-          payment: true
-        }
-      })
-  
-      return NextResponse.json(orders, { status: 200 })
-    } catch (error) {
-      console.error('Error fetching orders:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch orders' },
-        { status: 500 }
-      )
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: session.user.id
+      },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                category: true
+              }
+            }
+          }
+        },
+        payment: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return NextResponse.json(orders)
+  } catch (error) {
+    console.error('Error fetching orders:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch orders' },
+      { status: 500 }
+    )
   }
-  
+}
