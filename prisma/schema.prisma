@@ -66,6 +66,8 @@ model Order {
   updatedAt      DateTime       @updatedAt @map("updated_at")
   completedAt    DateTime?      @map("completed_at")
   adminNotes     String?        @map("admin_notes")
+  confirmedAt    DateTime?      @map("confirmed_at")
+  readyAt        DateTime?      @map("ready_at")
   orderItems     OrderItem[]
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -94,19 +96,18 @@ enum Role {
 enum OrderStatus {
   PENDING
   CONFIRMED
-  OUT_FOR_DELIVERY
+  READY
   COMPLETED
   CANCELLED
 }
 
 enum PaymentMethod {
   UPI
-  COD
+  CASH
 }
 
 enum PaymentStatus {
   PENDING
-  VERIFIED
   COMPLETED
 }
 

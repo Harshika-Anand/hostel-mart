@@ -90,39 +90,52 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid updates' }, { status: 400 })
     }
 
-    // Prepare the update object with proper typing
+    // Get current order
+    const currentOrder = await prisma.order.findUnique({
+      where: { id }
+    })
+
+    if (!currentOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    // Prepare the update object
     const updateData: any = {}
 
-    // Handle status transitions - only use schema-defined statuses
+    // Handle order status transitions - use NEW schema statuses
     if (updates.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
+      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
       if (!validStatuses.includes(updates.status)) {
-        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid order status' }, { status: 400 })
       }
 
       updateData.status = updates.status
 
-      // If order is being completed, set completedAt
+      // Set appropriate timestamps
+      if (updates.status === 'CONFIRMED' && !currentOrder.confirmedAt) {
+        updateData.confirmedAt = new Date()
+      }
+      if (updates.status === 'READY' && !currentOrder.readyAt) {
+        updateData.readyAt = new Date()
+      }
       if (updates.status === 'COMPLETED') {
         updateData.completedAt = new Date()
       }
     }
 
-    // Handle payment status updates - only use schema-defined statuses
+    // Handle payment status updates - use NEW schema statuses
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['PENDING', 'VERIFIED', 'COMPLETED']
+      const validPaymentStatuses = ['PENDING', 'COMPLETED']
       if (!validPaymentStatuses.includes(updates.paymentStatus)) {
         return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
       }
 
       updateData.paymentStatus = updates.paymentStatus
 
-      // If payment is verified for UPI orders, update order status too
-      if (updates.paymentStatus === 'VERIFIED') {
-        const order = await prisma.order.findUnique({ where: { id } })
-        if (order?.paymentMethod === 'UPI' && order.status === 'PENDING') {
-          updateData.status = 'CONFIRMED'
-        }
+      // Auto-confirm order when payment is completed for pending orders
+      if (updates.paymentStatus === 'COMPLETED' && currentOrder.status === 'PENDING') {
+        updateData.status = 'CONFIRMED'
+        updateData.confirmedAt = new Date()
       }
     }
 
@@ -200,7 +213,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Check if order can be cancelled - only use schema-defined statuses
+    // Check if order can be cancelled - use NEW schema statuses
     const nonCancellableStatuses = ['COMPLETED', 'CANCELLED']
     if (nonCancellableStatuses.includes(order.status)) {
       return NextResponse.json({ 
@@ -217,7 +230,7 @@ export async function DELETE(
           status: 'CANCELLED',
           completedAt: new Date(),
           adminNotes: session.user.role === 'CUSTOMER' 
-            ? 'Cancelled by customer' 
+            ? (order.adminNotes ? `${order.adminNotes}\n\nCancelled by customer on ${new Date().toLocaleString()}` : `Cancelled by customer on ${new Date().toLocaleString()}`)
             : order.adminNotes || undefined
         }
       })

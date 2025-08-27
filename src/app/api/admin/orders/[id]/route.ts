@@ -38,7 +38,6 @@ export async function GET(
             }
           }
         }
-        // Removed payment include - not in schema
       }
     })
 
@@ -56,7 +55,7 @@ export async function GET(
   }
 }
 
-// PATCH - Update order status, notes, delivery, etc.
+// PATCH - Update order status, payment status, notes, etc.
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -73,22 +72,7 @@ export async function PATCH(
 
     console.log('Updating order:', id, 'with:', updates)
 
-    // Only allow updates to fields that exist in the schema
-    const allowedUpdates = [
-      'status', 
-      'paymentStatus', 
-      'adminNotes', 
-      'deliveryMethod', 
-      'roomNumber',
-      'paymentMethod',
-      'paymentPin'
-    ]
-    const isValidOperation = Object.keys(updates).every(key => allowedUpdates.includes(key))
-
-    if (!isValidOperation) {
-      return NextResponse.json({ error: 'Invalid updates' }, { status: 400 })
-    }
-
+    // Get current order
     const currentOrder = await prisma.order.findUnique({
       where: { id }
     })
@@ -99,16 +83,22 @@ export async function PATCH(
 
     const orderUpdates: any = {}
 
-    // Handle status updates - only use schema-defined statuses
+    // Handle order status updates
     if (updates.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
+      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
       if (!validStatuses.includes(updates.status)) {
-        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid order status' }, { status: 400 })
       }
-    
+
       orderUpdates.status = updates.status
-    
-      // If order is being completed, set completedAt
+
+      // Set appropriate timestamps
+      if (updates.status === 'CONFIRMED' && !currentOrder.confirmedAt) {
+        orderUpdates.confirmedAt = new Date()
+      }
+      if (updates.status === 'READY' && !currentOrder.readyAt) {
+        orderUpdates.readyAt = new Date()
+      }
       if (updates.status === 'COMPLETED') {
         orderUpdates.completedAt = new Date()
       }
@@ -116,19 +106,24 @@ export async function PATCH(
 
     // Handle payment status updates
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['PENDING', 'VERIFIED', 'COMPLETED']
+      const validPaymentStatuses = ['PENDING', 'COMPLETED']
       if (!validPaymentStatuses.includes(updates.paymentStatus)) {
         return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
       }
+
       orderUpdates.paymentStatus = updates.paymentStatus
+
+      // Auto-confirm order when payment is completed for pending orders
+      if (updates.paymentStatus === 'COMPLETED' && currentOrder.status === 'PENDING') {
+        orderUpdates.status = 'CONFIRMED'
+        orderUpdates.confirmedAt = new Date()
+      }
     }
 
-    // Handle other allowed updates
+    // Handle other updates
     if (updates.adminNotes !== undefined) orderUpdates.adminNotes = updates.adminNotes
     if (updates.deliveryMethod) orderUpdates.deliveryMethod = updates.deliveryMethod
     if (updates.roomNumber) orderUpdates.roomNumber = updates.roomNumber
-    if (updates.paymentMethod) orderUpdates.paymentMethod = updates.paymentMethod
-    if (updates.paymentPin) orderUpdates.paymentPin = updates.paymentPin
 
     const result = await prisma.order.update({
       where: { id },
@@ -151,7 +146,6 @@ export async function PATCH(
             }
           }
         }
-        // Removed payment include - not in schema
       }
     })
 
@@ -165,7 +159,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete order and items
+// DELETE - Cancel order
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -194,7 +188,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Restore stock and delete order
+    // Can't cancel completed orders
+    if (existingOrder.status === 'COMPLETED') {
+      return NextResponse.json({ error: 'Cannot cancel completed orders' }, { status: 400 })
+    }
+
+    // Cancel order and restore stock
     await prisma.$transaction(async (tx) => {
       // Restore product stock
       for (const item of existingOrder.orderItems) {
@@ -208,16 +207,22 @@ export async function DELETE(
         })
       }
 
-      // Delete order items first (due to foreign key constraints)
-      await tx.orderItem.deleteMany({ where: { orderId: id } })
-      
-      // Delete the order
-      await tx.order.delete({ where: { id } })
+      // Cancel the order
+      await tx.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          completedAt: new Date(),
+          adminNotes: existingOrder.adminNotes 
+            ? `${existingOrder.adminNotes}\n\nCancelled by admin on ${new Date().toLocaleString()}`
+            : `Cancelled by admin on ${new Date().toLocaleString()}`
+        }
+      })
     })
 
-    return NextResponse.json({ message: 'Order deleted successfully' })
+    return NextResponse.json({ message: 'Order cancelled successfully' })
   } catch (error) {
-    console.error('Error deleting order:', error)
+    console.error('Error cancelling order:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

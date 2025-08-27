@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { PaymentMethod, DeliveryMethod, OrderStatus, PaymentStatus } from "@prisma/client"
 
 // Helper function to generate order number
 async function generateOrderNumber(): Promise<string> {
@@ -53,11 +54,20 @@ export async function GET(request: NextRequest) {
       const status = searchParams.get('status')
       const paymentMethod = searchParams.get('paymentMethod')
       
+      // Use schema enum values
       if (status && status !== 'all') {
-        whereClause.status = status
+        const validStatuses = Object.values(OrderStatus)
+        if (validStatuses.includes(status as OrderStatus)) {
+          whereClause.status = status as OrderStatus
+        }
       }
+      
+      // Use schema payment methods
       if (paymentMethod && paymentMethod !== 'all') {
-        whereClause.paymentMethod = paymentMethod
+        const validPaymentMethods = Object.values(PaymentMethod)
+        if (validPaymentMethods.includes(paymentMethod as PaymentMethod)) {
+          whereClause.paymentMethod = paymentMethod as PaymentMethod
+        }
       }
     }
 
@@ -107,19 +117,36 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { items, paymentMethod, deliveryMethod, roomNumber, paymentPin, subtotal, deliveryFee, totalAmount } = body
+    const { 
+      items, 
+      paymentMethod, 
+      deliveryMethod, 
+      roomNumber, 
+      paymentPin, 
+      subtotal, 
+      deliveryFee, 
+      totalAmount,
+      customerName,
+      customerEmail 
+    } = body
 
     // Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items in order' }, { status: 400 })
     }
 
-    if (!paymentMethod || !['UPI', 'COD'].includes(paymentMethod)) {
-      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
+    // Validate payment method - should be UPI or CASH
+    if (!paymentMethod || !['UPI', 'CASH'].includes(paymentMethod)) {
+      return NextResponse.json({ 
+        error: 'Invalid payment method. Use UPI or CASH.' 
+      }, { status: 400 })
     }
 
+    // Validate delivery method - should be PICKUP or DELIVERY
     if (!deliveryMethod || !['PICKUP', 'DELIVERY'].includes(deliveryMethod)) {
-      return NextResponse.json({ error: 'Invalid delivery method' }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'Invalid delivery method. Use PICKUP or DELIVERY.' 
+      }, { status: 400 })
     }
 
     if (deliveryMethod === 'DELIVERY' && !roomNumber) {
@@ -156,7 +183,7 @@ export async function POST(request: NextRequest) {
 
       if (!product || !product.isAvailable || product.stockQuantity < item.quantity) {
         return NextResponse.json(
-          { error: `Product ${item.name || product?.name || 'unknown'} is not available in requested quantity` },
+          { error: `Product ${item.productName || product?.name || 'unknown'} is not available in requested quantity` },
           { status: 400 }
         )
       }
@@ -192,18 +219,18 @@ export async function POST(request: NextRequest) {
 
     // Create order with transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Create the order
+      // Create the order using proper Prisma enums
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           userId: user.id,
-          customerName: user.name,
-          customerEmail: user.email,
-          status: 'PENDING',
-          paymentMethod: paymentMethod as 'UPI' | 'COD',
-          paymentStatus: paymentMethod === 'UPI' ? 'PENDING' : 'PENDING', // Both start as PENDING
+          customerName: customerName || user.name,
+          customerEmail: customerEmail || user.email,
+          status: OrderStatus.PENDING,
+          paymentMethod: paymentMethod as PaymentMethod,
+          paymentStatus: PaymentStatus.PENDING,
           paymentPin: paymentMethod === 'UPI' ? paymentPin : null,
-          deliveryMethod: deliveryMethod as 'PICKUP' | 'DELIVERY',
+          deliveryMethod: deliveryMethod as DeliveryMethod,
           roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : (user.roomNumber || null),
           subtotal,
           deliveryFee,
@@ -243,6 +270,100 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)
+    
+    // Log the full error details for debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - Update order status (Admin only)
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { orderId, status, paymentStatus, adminNotes } = body
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
+    }
+
+    // Validate status if provided
+    if (status && !Object.values(OrderStatus).includes(status)) {
+      return NextResponse.json({ 
+        error: `Invalid status. Use one of: ${Object.values(OrderStatus).join(', ')}` 
+      }, { status: 400 })
+    }
+
+    // Validate payment status if provided
+    if (paymentStatus && !Object.values(PaymentStatus).includes(paymentStatus)) {
+      return NextResponse.json({ 
+        error: `Invalid payment status. Use one of: ${Object.values(PaymentStatus).join(', ')}` 
+      }, { status: 400 })
+    }
+
+    const updateData: any = {}
+    
+    if (status) {
+      updateData.status = status as OrderStatus
+      
+      // Set timestamps based on status
+      if (status === OrderStatus.CONFIRMED) {
+        updateData.confirmedAt = new Date()
+      } else if (status === OrderStatus.READY) {
+        updateData.readyAt = new Date()
+      } else if (status === OrderStatus.COMPLETED) {
+        updateData.completedAt = new Date()
+      }
+    }
+
+    if (paymentStatus) {
+      updateData.paymentStatus = paymentStatus as PaymentStatus
+    }
+
+    if (adminNotes !== undefined) {
+      updateData.adminNotes = adminNotes
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+            roomNumber: true
+          }
+        },
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                category: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(updatedOrder)
+  } catch (error) {
+    console.error('Error updating order:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

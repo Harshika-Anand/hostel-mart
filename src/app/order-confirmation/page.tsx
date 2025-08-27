@@ -31,6 +31,8 @@ interface Order {
   deliveryFee: number
   totalAmount: number
   createdAt: string
+  confirmedAt?: string
+  readyAt?: string
   completedAt?: string
   adminNotes?: string
   customerName: string
@@ -137,12 +139,13 @@ export default function OrderConfirmationPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
+        return 'text-blue-600 bg-blue-50'
+      case 'ready':
+        return 'text-purple-600 bg-purple-50'
       case 'completed':
         return 'text-green-600 bg-green-50'
       case 'pending':
         return 'text-yellow-600 bg-yellow-50'
-      case 'out_for_delivery':
-        return 'text-blue-600 bg-blue-50'
       case 'cancelled':
         return 'text-red-600 bg-red-50'
       default:
@@ -170,19 +173,23 @@ export default function OrderConfirmationPage() {
         case 'confirmed':
           return {
             title: 'Order Confirmed!',
-            message: 'Your payment has been verified. Your order is being prepared.',
+            message: 'Your payment has been verified. Your snacks are being packed.',
             icon: '✅'
           }
-        case 'out_for_delivery':
+        case 'ready':
           return {
-            title: 'Out for Delivery',
-            message: `Your order is on the way to room ${order.roomNumber}. Please be available to receive it.`,
-            icon: '🚚'
+            title: order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!',
+            message: order.deliveryMethod === 'PICKUP' 
+              ? 'Your snacks are packed and ready for pickup!' 
+              : `Your snacks are packed and ready for delivery to room ${order.roomNumber}.`,
+            icon: '📦'
           }
         case 'completed':
           return {
             title: 'Order Completed',
-            message: 'Your order has been delivered successfully. Thank you for your order!',
+            message: order.deliveryMethod === 'PICKUP' 
+              ? 'Your order has been picked up successfully. Thank you!' 
+              : 'Your order has been delivered successfully. Thank you!',
             icon: '🎉'
           }
         default:
@@ -193,36 +200,38 @@ export default function OrderConfirmationPage() {
           }
       }
     } else {
-      // COD
+      // CASH payment
       switch (order.status.toLowerCase()) {
         case 'pending':
           return {
             title: 'Order Under Review',
-            message: 'Your cash-on-delivery order is being processed. Stock is being reserved for you.',
+            message: 'Your cash payment order is being processed. Stock is being reserved for you.',
             icon: '⏳'
           }
         case 'confirmed':
           return {
             title: 'Order Confirmed!',
-            message: 'Your order is confirmed and being prepared. You\'ll pay when you receive it.',
+            message: 'Your order is confirmed. Your snacks are being packed.',
             icon: '✅'
           }
-        case 'out_for_delivery':
+        case 'ready':
           return {
-            title: 'Out for Delivery',
-            message: `Your order is on the way to room ${order.roomNumber}. Please have ₹${order.totalAmount} ready in cash.`,
-            icon: '🚚'
+            title: order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!',
+            message: order.deliveryMethod === 'PICKUP'
+              ? `Your snacks are ready! Come with ₹${order.totalAmount} in cash to collect them.`
+              : `Your snacks are ready for delivery to room ${order.roomNumber}. Have ₹${order.totalAmount} ready.`,
+            icon: '📦'
           }
         case 'completed':
           return {
             title: 'Order Completed',
-            message: 'Your order has been completed successfully. Thank you for your order!',
+            message: 'Your order has been completed successfully. Thank you!',
             icon: '🎉'
           }
         default:
           return {
             title: 'Order Placed',
-            message: 'Your cash-on-delivery order has been received.',
+            message: 'Your cash payment order has been received.',
             icon: '📋'
           }
       }
@@ -278,12 +287,12 @@ export default function OrderConfirmationPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Method:</span>
                 <span className="font-medium">
-                  {order.paymentMethod === 'UPI' ? 'UPI Payment' : 'Cash on Delivery'}
+                  {order.paymentMethod === 'UPI' ? 'UPI Payment' : 'Cash Payment'}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-gray-600">Delivery Method:</span>
+                <span className="text-gray-600">Fulfillment Method:</span>
                 <span className="font-medium">
                   {order.deliveryMethod === 'DELIVERY' ? 'Room Delivery' : 'Self Pickup'}
                 </span>
@@ -296,10 +305,10 @@ export default function OrderConfirmationPage() {
                 </div>
               )}
 
-              {order.paymentPin && (
+              {order.paymentPin && order.paymentMethod === 'UPI' && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Payment PIN:</span>
-                  <span className="font-mono text-sm">****{order.paymentPin}</span>
+                  <span className="text-gray-600">UPI Reference:</span>
+                  <span className="font-mono text-sm">{order.paymentPin}</span>
                 </div>
               )}
               
@@ -363,20 +372,20 @@ export default function OrderConfirmationPage() {
                 </>
               ) : order.status === 'CONFIRMED' ? (
                 <>
-                  <p>• Your order is being prepared by our team</p>
-                  <p>• You'll be notified when it's ready</p>
-                  <p>• Estimated preparation time: 15-30 minutes</p>
+                  <p>• Your snacks are being packed by our team</p>
+                  <p>• You'll be notified when they're ready</p>
+                  <p>• Estimated packing time: 2-5 minutes</p>
                 </>
-              ) : order.status === 'OUT_FOR_DELIVERY' ? (
+              ) : order.status === 'READY' ? (
                 order.deliveryMethod === 'DELIVERY' ? (
                   <>
-                    <p>• Your order is out for delivery</p>
+                    <p>• Your snacks are packed and ready for delivery</p>
                     <p>• Please be available at room {order.roomNumber}</p>
                     <p>• Our delivery person will contact you</p>
                   </>
                 ) : (
                   <>
-                    <p>• Your order is ready for pickup!</p>
+                    <p>• Your snacks are packed and ready for pickup!</p>
                     <p>• Come to the pickup location to collect your order</p>
                     <p>• Show this confirmation or your order number</p>
                   </>
@@ -384,40 +393,39 @@ export default function OrderConfirmationPage() {
               ) : (
                 <>
                   <p>• Your order process is complete</p>
-                  <p>• Thank you for choosing Hostel Mart!</p>
+                  <p>• Thank you for choosing our snack shop!</p>
                 </>
               )
             ) : (
               order.status === 'PENDING' ? (
                 <>
-                  <p>• Your cash-on-delivery order is being processed</p>
+                  <p>• Your cash payment order is being processed</p>
                   <p>• Stock is being reserved for you</p>
                   <p>• You'll be notified when it's ready</p>
                 </>
               ) : order.status === 'CONFIRMED' ? (
+                <>
+                  <p>• Your snacks are being packed</p>
+                  <p>• Estimated packing time: 2-5 minutes</p>
+                </>
+              ) : order.status === 'READY' ? (
                 order.deliveryMethod === 'DELIVERY' ? (
                   <>
-                    <p>• Your order is being prepared for delivery to room {order.roomNumber}</p>
+                    <p>• Your snacks are ready for delivery to room {order.roomNumber}</p>
                     <p>• Please have ₹{order.totalAmount} ready in cash</p>
-                    <p>• Estimated preparation time: 15-30 minutes</p>
+                    <p>• Our delivery person will arrive shortly</p>
                   </>
                 ) : (
                   <>
-                    <p>• Your order is being prepared for pickup</p>
+                    <p>• Your snacks are ready for pickup!</p>
                     <p>• Come to the pickup location with ₹{order.totalAmount} in cash</p>
                     <p>• Please bring exact change if possible</p>
                   </>
                 )
-              ) : order.status === 'OUT_FOR_DELIVERY' ? (
-                <>
-                  <p>• Your order is out for delivery to room {order.roomNumber}</p>
-                  <p>• Please have ₹{order.totalAmount} ready in cash</p>
-                  <p>• Our delivery person will arrive shortly</p>
-                </>
               ) : (
                 <>
                   <p>• Your order process is complete</p>
-                  <p>• Thank you for choosing Hostel Mart!</p>
+                  <p>• Thank you for choosing our snack shop!</p>
                 </>
               )
             )}
@@ -427,7 +435,7 @@ export default function OrderConfirmationPage() {
         {/* Admin Notes */}
         {order.adminNotes && (
           <div className="bg-yellow-50 rounded-lg p-6 mt-6">
-            <h3 className="text-lg font-semibold text-yellow-900 mb-2">Admin Note</h3>
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">Note from Admin</h3>
             <p className="text-yellow-800">{order.adminNotes}</p>
           </div>
         )}

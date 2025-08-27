@@ -31,6 +31,8 @@ interface Order {
   deliveryFee: number
   totalAmount: number
   createdAt: string
+  confirmedAt?: string
+  readyAt?: string
   completedAt?: string
   adminNotes?: string
   customerName: string
@@ -162,12 +164,13 @@ export default function AdminOrdersPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
+        return 'text-blue-600 bg-blue-50 border-blue-200'
+      case 'ready':
+        return 'text-purple-600 bg-purple-50 border-purple-200'
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200'
       case 'pending':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-      case 'out_for_delivery':
-        return 'text-blue-600 bg-blue-50 border-blue-200'
       case 'cancelled':
         return 'text-red-600 bg-red-50 border-red-200'
       default:
@@ -175,32 +178,84 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'verified':
-      case 'completed':
-        return 'text-green-600 bg-green-50'
-      case 'pending':
-        return 'text-yellow-600 bg-yellow-50'
-      default:
-        return 'text-gray-600 bg-gray-50'
+  const getPaymentStatusColor = (status: string, method: string) => {
+    if (method === 'CASH') {
+      return status === 'COMPLETED' 
+        ? 'text-green-600 bg-green-50'
+        : 'text-orange-600 bg-orange-50'
     }
+    // UPI
+    return status === 'COMPLETED'
+      ? 'text-green-600 bg-green-50'
+      : 'text-yellow-600 bg-yellow-50'
   }
 
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
-  // Updated to only use schema-defined statuses
-  const getNextStatus = (currentStatus: string, paymentMethod: string) => {
-    const statusFlow = {
-      'PENDING': paymentMethod === 'UPI' ? ['CONFIRMED', 'CANCELLED'] : ['CONFIRMED', 'CANCELLED'],
-      'CONFIRMED': ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
-      'OUT_FOR_DELIVERY': ['COMPLETED'],
-      'COMPLETED': [],
-      'CANCELLED': []
+  // Get available next actions based on current state
+  const getAvailableActions = (order: Order) => {
+    const actions: { type: 'order' | 'payment', status: string, label: string, color: string }[] = []
+
+    // Payment actions
+    if (order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED') {
+      if (order.paymentMethod === 'UPI') {
+        actions.push({
+          type: 'payment',
+          status: 'COMPLETED',
+          label: 'Verify UPI Payment',
+          color: 'bg-green-600 hover:bg-green-700'
+        })
+      } else if (order.paymentMethod === 'CASH') {
+        actions.push({
+          type: 'payment',
+          status: 'COMPLETED',
+          label: 'Mark Cash Received',
+          color: 'bg-green-600 hover:bg-green-700'
+        })
+      }
     }
-    return statusFlow[currentStatus as keyof typeof statusFlow] || []
+
+    // Order status actions
+    if (order.status === 'PENDING' && order.paymentStatus === 'COMPLETED') {
+      actions.push({
+        type: 'order',
+        status: 'CONFIRMED',
+        label: 'Confirm Order',
+        color: 'bg-blue-600 hover:bg-blue-700'
+      })
+    }
+
+    if (order.status === 'CONFIRMED') {
+      actions.push({
+        type: 'order',
+        status: 'READY',
+        label: 'Pack Order (Ready)',
+        color: 'bg-purple-600 hover:bg-purple-700'
+      })
+    }
+
+    if (order.status === 'READY') {
+      actions.push({
+        type: 'order',
+        status: 'COMPLETED',
+        label: order.deliveryMethod === 'PICKUP' ? 'Mark as Picked Up' : 'Mark as Delivered',
+        color: 'bg-green-600 hover:bg-green-700'
+      })
+    }
+
+    // Cancel action (if not already completed/cancelled)
+    if (!['COMPLETED', 'CANCELLED'].includes(order.status)) {
+      actions.push({
+        type: 'order',
+        status: 'CANCELLED',
+        label: 'Cancel Order',
+        color: 'bg-red-600 hover:bg-red-700'
+      })
+    }
+
+    return actions
   }
 
   if (loading) {
@@ -232,7 +287,7 @@ export default function AdminOrdersPage() {
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status Filter</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -241,7 +296,7 @@ export default function AdminOrdersPage() {
                   <option value="all">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="CONFIRMED">Confirmed</option>
-                  <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
+                  <option value="READY">Ready</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
@@ -255,8 +310,8 @@ export default function AdminOrdersPage() {
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Methods</option>
-                  <option value="UPI">UPI</option>
-                  <option value="COD">Cash on Delivery</option>
+                  <option value="UPI">UPI Payment</option>
+                  <option value="CASH">Cash Payment</option>
                 </select>
               </div>
 
@@ -304,22 +359,22 @@ export default function AdminOrdersPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-gray-900">₹{order.totalAmount}</p>
-                            <p className="text-xs text-gray-500">{order.paymentMethod}</p>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                            {formatStatus(order.status)}
+                            Order: {formatStatus(order.status)}
                           </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                            Pay: {formatStatus(order.paymentStatus)}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus, order.paymentMethod)}`}>
+                            Payment: {formatStatus(order.paymentStatus)}
                           </span>
-                          {order.deliveryMethod && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-600">
-                              {formatStatus(order.deliveryMethod)}
-                            </span>
-                          )}
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600">
+                            {order.paymentMethod}
+                          </span>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-600">
+                            {formatStatus(order.deliveryMethod)}
+                          </span>
                         </div>
 
                         <div className="text-sm text-gray-600">
@@ -327,10 +382,28 @@ export default function AdminOrdersPage() {
                           {order.roomNumber && (
                             <p>Room: {order.roomNumber}</p>
                           )}
-                          {order.paymentPin && (
-                            <p>UPI PIN: {order.paymentPin}</p>
+                          {order.paymentPin && order.paymentMethod === 'UPI' && (
+                            <p className="font-mono text-xs">UPI PIN: ****{order.paymentPin}</p>
                           )}
                         </div>
+
+                        {/* Quick actions for urgent items */}
+                        {(order.paymentStatus === 'PENDING' || order.status === 'READY') && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex gap-2">
+                              {order.paymentStatus === 'PENDING' && (
+                                <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                                  {order.paymentMethod === 'UPI' ? '⚠️ Verify Payment' : '💰 Awaiting Cash'}
+                                </span>
+                              )}
+                              {order.status === 'READY' && (
+                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                                  🚀 {order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -350,7 +423,7 @@ export default function AdminOrdersPage() {
                   getStatusColor={getStatusColor}
                   getPaymentStatusColor={getPaymentStatusColor}
                   formatStatus={formatStatus}
-                  getNextStatus={getNextStatus}
+                  getAvailableActions={getAvailableActions}
                 />
               ) : (
                 <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -374,9 +447,9 @@ interface OrderDetailsProps {
   onAddNote: (orderId: string, note: string) => void
   updating: string | null
   getStatusColor: (status: string) => string
-  getPaymentStatusColor: (status: string) => string
+  getPaymentStatusColor: (status: string, method: string) => string
   formatStatus: (status: string) => string
-  getNextStatus: (currentStatus: string, paymentMethod: string) => string[]
+  getAvailableActions: (order: Order) => { type: 'order' | 'payment', status: string, label: string, color: string }[]
 }
 
 function OrderDetails({ 
@@ -388,9 +461,10 @@ function OrderDetails({
   getStatusColor,
   getPaymentStatusColor,
   formatStatus,
-  getNextStatus
+  getAvailableActions
 }: OrderDetailsProps) {
   const [noteText, setNoteText] = useState(order.adminNotes || '')
+  const availableActions = getAvailableActions(order)
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -405,25 +479,75 @@ function OrderDetails({
           {order.user.phone && <p><strong>Phone:</strong> {order.user.phone}</p>}
           {order.roomNumber && <p><strong>Room:</strong> {order.roomNumber}</p>}
           <p><strong>Ordered:</strong> {new Date(order.createdAt).toLocaleString('en-IN')}</p>
+          {order.confirmedAt && (
+            <p><strong>Confirmed:</strong> {new Date(order.confirmedAt).toLocaleString('en-IN')}</p>
+          )}
+          {order.readyAt && (
+            <p><strong>Ready:</strong> {new Date(order.readyAt).toLocaleString('en-IN')}</p>
+          )}
           {order.completedAt && (
             <p><strong>Completed:</strong> {new Date(order.completedAt).toLocaleString('en-IN')}</p>
           )}
         </div>
       </div>
 
+      {/* Current Status */}
+      <div className="p-6 border-b">
+        <h4 className="font-semibold text-gray-900 mb-4">Current Status</h4>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span>Order Status:</span>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
+              {formatStatus(order.status)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Payment Status:</span>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus, order.paymentMethod)}`}>
+              {formatStatus(order.paymentStatus)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Payment Method:</span>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-600">
+              {order.paymentMethod}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Fulfillment:</span>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-50 text-purple-600">
+              {formatStatus(order.deliveryMethod)}
+            </span>
+          </div>
+        </div>
+
+        {/* UPI Payment Info */}
+        {order.paymentMethod === 'UPI' && order.paymentPin && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>UPI Reference PIN:</strong> <span className="font-mono">{order.paymentPin}</span>
+            </p>
+            <p className="text-xs text-blue-600 mt-1">Customer provided this PIN as payment reference</p>
+          </div>
+        )}
+      </div>
+
       {/* Order Items */}
       <div className="p-6 border-b">
-        <h4 className="font-semibold text-gray-900 mb-4">Order Items</h4>
+        <h4 className="font-semibold text-gray-900 mb-4">Items to Pack</h4>
         <div className="space-y-3">
           {order.orderItems.map((item, index) => (
-            <div key={index} className="flex justify-between items-center">
-              <div>
+            <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded">
+              <div className="flex-1">
                 <p className="font-medium">{item.productName || item.product.name}</p>
                 <p className="text-sm text-gray-500">
-                  {item.product.category.name} • Qty: {item.quantity} • ₹{item.price} each
+                  {item.product.category.name} • ₹{item.price} each
                 </p>
               </div>
-              <span className="font-semibold">₹{item.subtotal}</span>
+              <div className="text-right">
+                <p className="font-semibold text-lg">×{item.quantity}</p>
+                <p className="text-sm text-gray-600">₹{item.subtotal}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -439,70 +563,75 @@ function OrderDetails({
               <span>₹{order.deliveryFee}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold">
+          <div className="flex justify-between font-bold text-lg">
             <span>Total:</span>
             <span>₹{order.totalAmount}</span>
           </div>
         </div>
       </div>
 
-      {/* Status Management */}
-      <div className="p-6 border-b">
-        <div className="space-y-4">
-          {/* Current Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
-              {formatStatus(order.status)}
-            </span>
+      {/* Available Actions */}
+      {availableActions.length > 0 && (
+        <div className="p-6 border-b">
+          <h4 className="font-semibold text-gray-900 mb-4">Actions</h4>
+          <div className="grid grid-cols-1 gap-3">
+            {availableActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (action.type === 'payment') {
+                    onUpdatePayment(order.id, action.status)
+                  } else {
+                    onUpdateStatus(order.id, action.status)
+                  }
+                }}
+                disabled={updating === order.id}
+                className={`w-full px-4 py-2 text-white rounded-lg font-medium disabled:opacity-50 transition ${action.color}`}
+              >
+                {updating === order.id ? 'Updating...' : action.label}
+              </button>
+            ))}
           </div>
+        </div>
+      )}
 
-          {/* Payment Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-            <div className="flex items-center space-x-3">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                Payment: {formatStatus(order.paymentStatus)}
-              </span>
-              {order.paymentMethod === 'UPI' && order.paymentStatus === 'PENDING' && (
-                <button
-                  onClick={() => onUpdatePayment(order.id, 'VERIFIED')}
-                  disabled={updating === order.id}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:opacity-50"
-                >
-                  Verify Payment
-                </button>
-              )}
-            </div>
-            {order.paymentPin && (
-              <p className="text-sm text-gray-600 mt-1">UPI Transaction PIN: <strong>{order.paymentPin}</strong></p>
-            )}
-          </div>
-
-          {/* Status Update Actions */}
-          {getNextStatus(order.status, order.paymentMethod).length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Update Status</label>
-              <div className="flex flex-wrap gap-2">
-                {getNextStatus(order.status, order.paymentMethod).map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => onUpdateStatus(order.id, status)}
-                    disabled={updating === order.id}
-                    className={`px-3 py-1 rounded text-sm font-medium disabled:opacity-50 ${
-                      status === 'CANCELLED'
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {formatStatus(status)}
-                  </button>
-                ))}
+      {/* Special Instructions for Cash Orders */}
+      {order.paymentMethod === 'CASH' && order.paymentStatus === 'PENDING' && (
+        <div className="p-6 border-b">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">💰</span>
+              <div>
+                <h5 className="font-semibold text-orange-900">Cash Payment Required</h5>
+                <p className="text-sm text-orange-800">
+                  Collect <strong>₹{order.totalAmount}</strong> in cash {order.deliveryMethod === 'PICKUP' ? 'when customer picks up' : 'upon delivery'}.
+                  Mark payment as completed once cash is received.
+                </p>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Delivery Instructions */}
+      {order.deliveryMethod === 'DELIVERY' && order.roomNumber && (
+        <div className="p-6 border-b">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">🏠</span>
+              <div>
+                <h5 className="font-semibold text-purple-900">Delivery Address</h5>
+                <p className="text-sm text-purple-800">
+                  <strong>Room {order.roomNumber}</strong>
+                  {order.user.phone && (
+                    <span className="block">Contact: {order.user.phone}</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Admin Notes */}
       <div className="p-6">
@@ -513,7 +642,7 @@ function OrderDetails({
             onChange={(e) => setNoteText(e.target.value)}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Add notes for customer or internal use..."
+            placeholder="Add internal notes or customer messages..."
           />
           <button
             onClick={() => onAddNote(order.id, noteText)}

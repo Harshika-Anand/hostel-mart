@@ -18,16 +18,17 @@ export async function GET(request: NextRequest) {
 
     const whereClause: any = {}
     
-    // Only filter by schema-defined statuses
+    // Use NEW schema statuses for filtering
     if (status && status !== 'all') {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
+      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
       if (validStatuses.includes(status)) {
         whereClause.status = status
       }
     }
     
+    // Use NEW payment methods for filtering
     if (paymentMethod && paymentMethod !== 'all') {
-      const validPaymentMethods = ['UPI', 'COD']
+      const validPaymentMethods = ['UPI', 'CASH']
       if (validPaymentMethods.includes(paymentMethod)) {
         whereClause.paymentMethod = paymentMethod
       }
@@ -53,7 +54,6 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-        // Removed payment include - not in schema
       },
       orderBy: {
         createdAt: 'desc'

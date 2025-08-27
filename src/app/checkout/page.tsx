@@ -6,12 +6,16 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 
+// Types matching your Prisma schema
+type PaymentMethod = 'UPI' | 'CASH'
+type DeliveryMethod = 'PICKUP' | 'DELIVERY'
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { cart, clearCart, getCartTotal } = useCart()
-  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'COD'>('UPI')
-  const [deliveryMethod, setDeliveryMethod] = useState<'PICKUP' | 'DELIVERY'>('PICKUP')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI')
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('PICKUP')
   const [roomNumber, setRoomNumber] = useState('')
   const [paymentPin, setPaymentPin] = useState('')
   const [loading, setLoading] = useState(false)
@@ -49,14 +53,31 @@ export default function CheckoutPage() {
 
     try {
       const orderData = {
-        items: cart,
-        paymentMethod,
-        deliveryMethod,
-        roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : null,
+        // Order items - matching your schema structure
+        items: cart.map(item => ({
+          productId: item.productId,
+          productName: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          subtotal: item.price * item.quantity
+        })),
+
+        // Payment info - matching PaymentMethod enum
+        paymentMethod, // 'UPI' | 'CASH'
         paymentPin: paymentMethod === 'UPI' ? paymentPin : null,
+
+        // Delivery info - matching DeliveryMethod enum
+        deliveryMethod, // 'PICKUP' | 'DELIVERY'
+        roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : null,
+
+        // Financial calculations
         subtotal: cartTotal,
         deliveryFee,
-        totalAmount: finalTotal
+        totalAmount: finalTotal,
+
+        // Customer info (from session)
+        customerName: session?.user?.name || '',
+        customerEmail: session?.user?.email || ''
       }
 
       const response = await fetch('/api/orders', {
@@ -73,10 +94,10 @@ export default function CheckoutPage() {
       }
 
       const order = await response.json()
-      
+
       // Clear cart only after successful order
       clearCart()
-      
+
       // Redirect to order confirmation
       router.push(`/order-confirmation?orderId=${order.id}`)
 
@@ -127,7 +148,7 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-            
+
             <div className="space-y-4 mb-6">
               {cart.map(item => (
                 <div key={item.productId} className="flex justify-between items-center py-3 border-b border-gray-100">
@@ -163,7 +184,7 @@ export default function CheckoutPage() {
             {/* Delivery Method */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Delivery Method</h2>
-              
+
               <div className="space-y-4">
                 <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
                   <input
@@ -171,7 +192,7 @@ export default function CheckoutPage() {
                     name="delivery"
                     value="PICKUP"
                     checked={deliveryMethod === 'PICKUP'}
-                    onChange={(e) => setDeliveryMethod(e.target.value as 'PICKUP')}
+                    onChange={(e) => setDeliveryMethod(e.target.value as DeliveryMethod)}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -187,7 +208,7 @@ export default function CheckoutPage() {
                     name="delivery"
                     value="DELIVERY"
                     checked={deliveryMethod === 'DELIVERY'}
-                    onChange={(e) => setDeliveryMethod(e.target.value as 'DELIVERY')}
+                    onChange={(e) => setDeliveryMethod(e.target.value as DeliveryMethod)}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -217,7 +238,7 @@ export default function CheckoutPage() {
             {/* Payment Method */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Method</h2>
-              
+
               <div className="space-y-4 mb-6">
                 <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
                   <input
@@ -225,7 +246,7 @@ export default function CheckoutPage() {
                     name="payment"
                     value="UPI"
                     checked={paymentMethod === 'UPI'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'UPI')}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -238,14 +259,14 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="payment"
-                    value="COD"
-                    checked={paymentMethod === 'COD'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'COD')}
+                    value="CASH"
+                    checked={paymentMethod === 'CASH'}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">Cash on {deliveryMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}</span>
-                    <p className="text-sm text-gray-500">Pay when you receive your order</p>
+                    <span className="font-medium">Cash Payment</span>
+                    <p className="text-sm text-gray-500">Pay in cash on {deliveryMethod === 'DELIVERY' ? 'delivery' : 'pickup'}</p>
                   </div>
                 </label>
               </div>
@@ -255,17 +276,21 @@ export default function CheckoutPage() {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h3 className="font-semibold text-blue-900 mb-3">UPI Payment Instructions</h3>
                   <div className="text-center mb-4">
-                    <div className="bg-white p-4 rounded-lg inline-block">
-                      <div className="w-40 h-40 bg-gray-200 rounded-lg flex items-center justify-center mb-2">
-                        <span className="text-gray-500 text-sm">QR Code</span>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border inline-block">
+                      <div className="mb-3">
+                        <img 
+                          src="/QRCode.jpg" 
+                          alt="UPI QR Code" 
+                          className="w-48 h-48 object-contain rounded-lg mx-auto border border-gray-100" 
+                        />
                       </div>
-                      <p className="text-sm font-semibold">UPI ID: hostelmart@paytm</p>
+                      <p className="text-sm font-semibold text-gray-800">UPI ID: harshika.anand-1@okhdfcbank</p>
                     </div>
                   </div>
-                  
+
                   <div className="text-sm text-blue-800 mb-4 space-y-1">
                     <p>1. Pay exactly ₹{finalTotal}</p>
-                    <p>2. Use UPI ID: <strong>hostelmart@paytm</strong></p>
+                    <p>2. Use UPI ID: <strong>harshika.anand-1@okhdfcbank</strong></p>
                     <p>3. Enter last 4 digits of transaction ID below</p>
                   </div>
 
@@ -289,7 +314,7 @@ export default function CheckoutPage() {
               )}
 
               {/* Cash Payment Details */}
-              {paymentMethod === 'COD' && (
+              {paymentMethod === 'CASH' && (
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-semibold text-green-900 mb-3">Cash Payment Instructions</h3>
                   <div className="text-sm text-green-800 space-y-1">
