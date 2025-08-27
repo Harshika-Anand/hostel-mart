@@ -1,27 +1,45 @@
+// File: src/app/order-confirmation/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+interface OrderItem {
+  id: string
+  quantity: number
+  productName: string
+  price: number
+  subtotal: number
+  product: {
+    name: string
+    category: {
+      name: string
+    }
+  }
+}
+
 interface Order {
   id: string
-  totalAmount: number
-  paymentMethod: string
+  orderNumber: string
   status: string
+  paymentMethod: string
+  paymentStatus: string
+  deliveryMethod: string
+  roomNumber?: string
+  subtotal: number
+  deliveryFee: number
+  totalAmount: number
   createdAt: string
-  orderItems: Array<{
-    quantity: number
-    priceAtTime: number
-    product: {
-      name: string
-      category: {
-        name: string
-      }
-    }
-  }>
+  completedAt?: string
+  adminNotes?: string
+  customerName: string
+  customerEmail: string
+  paymentPin?: string
+  orderItems: OrderItem[]
   payment?: {
     status: string
+    paymentProof?: string
   }
 }
 
@@ -51,15 +69,22 @@ export default function OrderConfirmationPage() {
 
   const fetchOrder = async () => {
     try {
+      setError('')
       const response = await fetch(`/api/orders/${orderId}`)
       if (!response.ok) {
-        throw new Error('Order not found')
+        if (response.status === 404) {
+          throw new Error('Order not found')
+        }
+        if (response.status === 403) {
+          throw new Error('Access denied')
+        }
+        throw new Error('Failed to load order')
       }
       const orderData = await response.json()
       setOrder(orderData)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching order:', error)
-      setError('Failed to load order details')
+      setError(error.message || 'Failed to load order details')
     } finally {
       setLoading(false)
     }
@@ -78,12 +103,20 @@ export default function OrderConfirmationPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Please sign in to view your order'}</p>
-          <button
-            onClick={() => router.push('/shop')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Back to Shop
-          </button>
+          <div className="space-x-4">
+            <button
+              onClick={() => router.push('/shop')}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Back to Shop
+            </button>
+            <button
+              onClick={() => router.push('/orders')}
+              className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700"
+            >
+              View Orders
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -108,10 +141,14 @@ export default function OrderConfirmationPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
+      case 'ready':
+      case 'delivered':
+      case 'completed':
         return 'text-green-600 bg-green-50'
       case 'pending':
+      case 'preparing':
         return 'text-yellow-600 bg-yellow-50'
-      case 'completed':
+      case 'out_for_delivery':
         return 'text-blue-600 bg-blue-50'
       case 'cancelled':
         return 'text-red-600 bg-red-50'
@@ -121,12 +158,20 @@ export default function OrderConfirmationPage() {
   }
 
   const getStatusMessage = () => {
+    if (order.status === 'CANCELLED') {
+      return {
+        title: 'Order Cancelled',
+        message: 'This order has been cancelled. If you paid via UPI, your refund will be processed.',
+        icon: '❌'
+      }
+    }
+
     if (order.paymentMethod === 'UPI') {
       switch (order.status.toLowerCase()) {
         case 'pending':
           return {
             title: 'Payment Under Review',
-            message: 'Your payment screenshot is being verified. You\'ll be notified once confirmed.',
+            message: 'Your UPI payment is being verified. You\'ll be notified once confirmed. This usually takes a few minutes.',
             icon: '⏳'
           }
         case 'confirmed':
@@ -135,11 +180,32 @@ export default function OrderConfirmationPage() {
             message: 'Your payment has been verified. Your order is being prepared.',
             icon: '✅'
           }
+        case 'preparing':
+          return {
+            title: 'Being Prepared',
+            message: 'Your order is currently being prepared by our team.',
+            icon: '👨‍🍳'
+          }
+        case 'ready':
+          return {
+            title: order.deliveryMethod === 'DELIVERY' ? 'Ready for Delivery!' : 'Ready for Pickup!',
+            message: order.deliveryMethod === 'DELIVERY' 
+              ? 'Your order is ready and will be delivered to your room shortly.' 
+              : 'Your order is ready! Come collect it from the pickup location.',
+            icon: '📦'
+          }
+        case 'out_for_delivery':
+          return {
+            title: 'Out for Delivery',
+            message: `Your order is on the way to room ${order.roomNumber}. Please be available to receive it.`,
+            icon: '🚚'
+          }
+        case 'delivered':
         case 'completed':
           return {
-            title: 'Order Ready for Pickup',
-            message: 'Your order is ready! Come collect it from the specified location.',
-            icon: '📦'
+            title: 'Order Completed',
+            message: 'Your order has been delivered successfully. Thank you for your order!',
+            icon: '🎉'
           }
         default:
           return {
@@ -154,19 +220,40 @@ export default function OrderConfirmationPage() {
         case 'pending':
           return {
             title: 'Order Under Review',
-            message: 'Your order is being processed. Stock is being reserved for you.',
+            message: 'Your cash-on-delivery order is being processed. Stock is being reserved for you.',
             icon: '⏳'
           }
         case 'confirmed':
           return {
             title: 'Order Confirmed!',
-            message: 'Your order is ready for pickup. Pay cash when you collect.',
+            message: 'Your order is confirmed and being prepared. You\'ll pay when you receive it.',
             icon: '✅'
           }
+        case 'preparing':
+          return {
+            title: 'Being Prepared',
+            message: 'Your order is currently being prepared by our team.',
+            icon: '👨‍🍳'
+          }
+        case 'ready':
+          return {
+            title: order.deliveryMethod === 'DELIVERY' ? 'Ready for Delivery!' : 'Ready for Pickup!',
+            message: order.deliveryMethod === 'DELIVERY' 
+              ? `Your order is ready for delivery to room ${order.roomNumber}. Pay ₹${order.totalAmount} in cash upon delivery.` 
+              : `Your order is ready for pickup! Pay ₹${order.totalAmount} in cash when you collect it.`,
+            icon: '📦'
+          }
+        case 'out_for_delivery':
+          return {
+            title: 'Out for Delivery',
+            message: `Your order is on the way to room ${order.roomNumber}. Please have ₹${order.totalAmount} ready in cash.`,
+            icon: '🚚'
+          }
+        case 'delivered':
         case 'completed':
           return {
             title: 'Order Completed',
-            message: 'Thank you for your purchase!',
+            message: 'Your order has been completed successfully. Thank you for your order!',
             icon: '🎉'
           }
         default:
@@ -203,9 +290,9 @@ export default function OrderConfirmationPage() {
         <div className="bg-white rounded-lg shadow p-8 text-center mb-8">
           <div className="text-6xl mb-4">{statusInfo.icon}</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{statusInfo.title}</h2>
-          <p className="text-gray-600 mb-4">{statusInfo.message}</p>
+          <p className="text-gray-600 mb-4 max-w-2xl mx-auto">{statusInfo.message}</p>
           <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-            {order.status}
+            Status: {order.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </div>
         </div>
 
@@ -216,13 +303,13 @@ export default function OrderConfirmationPage() {
             
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Order ID:</span>
-                <span className="font-mono text-sm">{order.id}</span>
+                <span className="text-gray-600">Order Number:</span>
+                <span className="font-medium">{order.orderNumber || `#${order.id.slice(-8)}`}</span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-gray-600">Order Date:</span>
-                <span>{new Date(order.createdAt).toLocaleString()}</span>
+                <span>{new Date(order.createdAt).toLocaleString('en-IN')}</span>
               </div>
               
               <div className="flex justify-between">
@@ -231,10 +318,33 @@ export default function OrderConfirmationPage() {
                   {order.paymentMethod === 'UPI' ? 'UPI Payment' : 'Cash on Delivery'}
                 </span>
               </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Delivery Method:</span>
+                <span className="font-medium">
+                  {order.deliveryMethod === 'DELIVERY' ? 'Room Delivery' : 'Self Pickup'}
+                </span>
+              </div>
+
+              {order.roomNumber && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Delivery Address:</span>
+                  <span className="font-medium">Room {order.roomNumber}</span>
+                </div>
+              )}
+
+              {order.paymentPin && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Payment PIN:</span>
+                  <span className="font-mono text-sm">****{order.paymentPin}</span>
+                </div>
+              )}
               
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total Amount:</span>
-                <span>₹{order.totalAmount}</span>
+              <div className="border-t pt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total Amount:</span>
+                  <span>₹{order.totalAmount}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -247,13 +357,32 @@ export default function OrderConfirmationPage() {
               {order.orderItems.map((item, index) => (
                 <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
                   <div>
-                    <h4 className="font-medium text-gray-900">{item.product.name}</h4>
+                    <h4 className="font-medium text-gray-900">
+                      {item.productName || item.product.name}
+                    </h4>
                     <p className="text-sm text-gray-500">{item.product.category.name}</p>
-                    <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                    <p className="text-sm text-gray-500">₹{item.price} × {item.quantity}</p>
                   </div>
-                  <span className="font-semibold">₹{item.priceAtTime * item.quantity}</span>
+                  <span className="font-semibold">₹{item.subtotal}</span>
                 </div>
               ))}
+            </div>
+
+            <div className="border-t mt-4 pt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal:</span>
+                <span>₹{order.subtotal}</span>
+              </div>
+              {order.deliveryFee > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Delivery Fee:</span>
+                  <span>₹{order.deliveryFee}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                <span>Total:</span>
+                <span>₹{order.totalAmount}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -265,39 +394,74 @@ export default function OrderConfirmationPage() {
             {order.paymentMethod === 'UPI' ? (
               order.status === 'PENDING' ? (
                 <>
-                  <p>• Your payment screenshot is being verified by the admin</p>
+                  <p>• Your UPI payment is being verified by our admin</p>
                   <p>• You'll receive an update once your payment is confirmed</p>
-                  <p>• This usually takes a few minutes</p>
+                  <p>• This process usually takes 5-10 minutes</p>
                 </>
-              ) : order.status === 'CONFIRMED' ? (
+              ) : order.status === 'CONFIRMED' || order.status === 'PREPARING' ? (
                 <>
-                  <p>• Your order is being prepared</p>
-                  <p>• You'll be notified when it's ready for pickup</p>
-                  <p>• Come to collect your order at the specified location</p>
+                  <p>• Your order is being prepared by our team</p>
+                  <p>• You'll be notified when it's ready</p>
+                  <p>• Estimated preparation time: 15-30 minutes</p>
                 </>
+              ) : order.status === 'READY' ? (
+                order.deliveryMethod === 'DELIVERY' ? (
+                  <>
+                    <p>• Your order is ready and will be delivered shortly</p>
+                    <p>• Please be available at room {order.roomNumber}</p>
+                    <p>• Our delivery person will contact you</p>
+                  </>
+                ) : (
+                  <>
+                    <p>• Your order is ready for pickup!</p>
+                    <p>• Come to the pickup location to collect your order</p>
+                    <p>• Show this confirmation or your order number</p>
+                  </>
+                )
               ) : (
                 <>
-                  <p>• Your order is ready for pickup!</p>
-                  <p>• Come collect it from the admin's room</p>
+                  <p>• Your order process is complete</p>
+                  <p>• Thank you for choosing Hostel Mart!</p>
                 </>
               )
             ) : (
               order.status === 'PENDING' ? (
                 <>
-                  <p>• Your order is being reviewed by the admin</p>
+                  <p>• Your cash-on-delivery order is being processed</p>
                   <p>• Stock is being reserved for you</p>
-                  <p>• You'll be notified when it's ready for pickup</p>
+                  <p>• You'll be notified when it's ready</p>
                 </>
+              ) : order.status === 'READY' ? (
+                order.deliveryMethod === 'DELIVERY' ? (
+                  <>
+                    <p>• Your order is ready for delivery to room {order.roomNumber}</p>
+                    <p>• Please have ₹{order.totalAmount} ready in cash</p>
+                    <p>• Our delivery person will arrive shortly</p>
+                  </>
+                ) : (
+                  <>
+                    <p>• Your order is ready for pickup!</p>
+                    <p>• Come to the pickup location with ₹{order.totalAmount} in cash</p>
+                    <p>• Please bring exact change if possible</p>
+                  </>
+                )
               ) : (
                 <>
-                  <p>• Your order is ready for pickup!</p>
-                  <p>• Come to collect and pay ₹{order.totalAmount} in cash</p>
-                  <p>• Please bring exact change if possible</p>
+                  <p>• Your order process is complete</p>
+                  <p>• Thank you for choosing Hostel Mart!</p>
                 </>
               )
             )}
           </div>
         </div>
+
+        {/* Admin Notes */}
+        {order.adminNotes && (
+          <div className="bg-yellow-50 rounded-lg p-6 mt-6">
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">Admin Note</h3>
+            <p className="text-yellow-800">{order.adminNotes}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-center space-x-4 mt-8">

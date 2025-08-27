@@ -1,3 +1,4 @@
+// File: src/app/checkout/page.tsx (REPLACE existing)
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -9,8 +10,8 @@ export default function CheckoutPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { cart, clearCart, getCartTotal } = useCart()
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi')
-  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
+  const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'COD'>('UPI')
+  const [deliveryMethod, setDeliveryMethod] = useState<'PICKUP' | 'DELIVERY'>('PICKUP')
   const [roomNumber, setRoomNumber] = useState('')
   const [paymentPin, setPaymentPin] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,7 +25,7 @@ export default function CheckoutPage() {
   }, [status, router])
 
   const cartTotal = getCartTotal()
-  const deliveryFee = deliveryMethod === 'delivery' ? 10 : 0
+  const deliveryFee = deliveryMethod === 'DELIVERY' ? 10 : 0
   const finalTotal = cartTotal + deliveryFee
 
   const placeOrder = async () => {
@@ -33,17 +34,12 @@ export default function CheckoutPage() {
       return
     }
 
-    if (paymentMethod === 'upi' && !paymentPin) {
+    if (paymentMethod === 'UPI' && !paymentPin) {
       setError('Please enter the last 4 digits of your UPI transaction ID')
       return
     }
 
-    if (deliveryMethod === 'delivery' && !roomNumber) {
-      setError('Please enter your room number for delivery')
-      return
-    }
-
-    if (paymentMethod === 'cod' && deliveryMethod === 'delivery' && !roomNumber) {
+    if (deliveryMethod === 'DELIVERY' && !roomNumber) {
       setError('Please enter your room number for delivery')
       return
     }
@@ -56,8 +52,8 @@ export default function CheckoutPage() {
         items: cart,
         paymentMethod,
         deliveryMethod,
-        roomNumber: deliveryMethod === 'delivery' ? roomNumber : null,
-        paymentPin: paymentMethod === 'upi' ? paymentPin : null,
+        roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : null,
+        paymentPin: paymentMethod === 'UPI' ? paymentPin : null,
         subtotal: cartTotal,
         deliveryFee,
         totalAmount: finalTotal
@@ -104,7 +100,9 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+          <div className="text-6xl mb-4">🛒</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Add some items to your cart before checking out</p>
           <button
             onClick={() => router.push('/shop')}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
@@ -118,22 +116,13 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <button
-              onClick={() => router.push('/shop')}
-              className="text-blue-600 hover:text-blue-800 mr-4 font-medium"
-            >
-              ← Back to Shop
-            </button>
-            <h1 className="text-xl font-semibold text-gray-900">Checkout</h1>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
+          <p className="text-gray-600">Review your order and complete your purchase</p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -156,7 +145,7 @@ export default function CheckoutPage() {
                 <span>Subtotal:</span>
                 <span>₹{cartTotal}</span>
               </div>
-              {deliveryMethod === 'delivery' && (
+              {deliveryMethod === 'DELIVERY' && (
                 <div className="flex justify-between text-gray-600">
                   <span>Delivery Fee:</span>
                   <span>₹{deliveryFee}</span>
@@ -180,9 +169,9 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="delivery"
-                    value="pickup"
-                    checked={deliveryMethod === 'pickup'}
-                    onChange={(e) => setDeliveryMethod(e.target.value as 'pickup')}
+                    value="PICKUP"
+                    checked={deliveryMethod === 'PICKUP'}
+                    onChange={(e) => setDeliveryMethod(e.target.value as 'PICKUP')}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -196,9 +185,9 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="delivery"
-                    value="delivery"
-                    checked={deliveryMethod === 'delivery'}
-                    onChange={(e) => setDeliveryMethod(e.target.value as 'delivery')}
+                    value="DELIVERY"
+                    checked={deliveryMethod === 'DELIVERY'}
+                    onChange={(e) => setDeliveryMethod(e.target.value as 'DELIVERY')}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -209,7 +198,7 @@ export default function CheckoutPage() {
                 </label>
               </div>
 
-              {deliveryMethod === 'delivery' && (
+              {deliveryMethod === 'DELIVERY' && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Room Number *
@@ -234,9 +223,9 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="payment"
-                    value="upi"
-                    checked={paymentMethod === 'upi'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'upi')}
+                    value="UPI"
+                    checked={paymentMethod === 'UPI'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'UPI')}
                     className="mr-3"
                   />
                   <div className="flex-1">
@@ -249,20 +238,20 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="payment"
-                    value="cod"
-                    checked={paymentMethod === 'cod'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'cod')}
+                    value="COD"
+                    checked={paymentMethod === 'COD'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'COD')}
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">Cash on {deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                    <span className="font-medium">Cash on {deliveryMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}</span>
                     <p className="text-sm text-gray-500">Pay when you receive your order</p>
                   </div>
                 </label>
               </div>
 
               {/* UPI Payment Details */}
-              {paymentMethod === 'upi' && (
+              {paymentMethod === 'UPI' && (
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h3 className="font-semibold text-blue-900 mb-3">UPI Payment Instructions</h3>
                   <div className="text-center mb-4">
@@ -300,11 +289,11 @@ export default function CheckoutPage() {
               )}
 
               {/* Cash Payment Details */}
-              {paymentMethod === 'cod' && (
+              {paymentMethod === 'COD' && (
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-semibold text-green-900 mb-3">Cash Payment Instructions</h3>
                   <div className="text-sm text-green-800 space-y-1">
-                    {deliveryMethod === 'pickup' ? (
+                    {deliveryMethod === 'PICKUP' ? (
                       <>
                         <p>1. Come to our room for pickup</p>
                         <p>2. Pay ₹{finalTotal} in cash</p>

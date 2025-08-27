@@ -1,3 +1,4 @@
+// File: src/app/shop/page.tsx (REPLACE existing)
 'use client'
 
 import { useSession } from 'next-auth/react'
@@ -130,42 +131,18 @@ export default function Shop() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <button
-                onClick={() => router.push('/')}
-                className="text-blue-600 hover:text-blue-800 mr-4 font-medium"
-              >
-                ← Back
-              </button>
-              <h1 className="text-xl font-semibold text-gray-900">Hostel Mart</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium">
-                Cart: {cartItemCount} items • ₹{cartTotal}
-              </div>
-              {cartItemCount > 0 && (
-                <button
-                  onClick={() => router.push('/checkout')}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
-                >
-                  Checkout
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop</h1>
+          <p className="text-gray-600">Browse our collection of snacks and treats</p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* Categories */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
               <div className="space-y-2">
                 <button
@@ -176,27 +153,32 @@ export default function Shop() {
                       : 'hover:bg-gray-100'
                   }`}
                 >
-                  All Items
+                  All Items ({products.filter(p => p.isAvailable && p.stockQuantity > 0).length})
                 </button>
-                {categories.map(category => (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full text-left px-3 py-2 rounded transition ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-100 text-blue-900 font-medium'
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                ))}
+                {categories.map(category => {
+                  const categoryProductCount = products.filter(p => 
+                    p.isAvailable && p.stockQuantity > 0 && p.category.id === category.id
+                  ).length
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`w-full text-left px-3 py-2 rounded transition ${
+                        selectedCategory === category.id
+                          ? 'bg-blue-100 text-blue-900 font-medium'
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {category.name} ({categoryProductCount})
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* Cart Summary */}
             {cart.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Cart</h3>
                 <div className="space-y-3">
                   {cart.map(item => (
@@ -218,6 +200,12 @@ export default function Shop() {
                       <span>Total:</span>
                       <span>₹{cartTotal}</span>
                     </div>
+                    <button
+                      onClick={() => router.push('/checkout')}
+                      className="w-full mt-3 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-medium"
+                    >
+                      Checkout
+                    </button>
                   </div>
                 </div>
               </div>
@@ -226,6 +214,20 @@ export default function Shop() {
 
           {/* Products Grid */}
           <div className="lg:col-span-3">
+            <div className="mb-4 flex justify-between items-center">
+              <p className="text-gray-600">
+                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+              </p>
+              {selectedCategory !== 'all' && (
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
+
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">🛒</div>
@@ -249,7 +251,7 @@ export default function Shop() {
                         
                         <div className="flex justify-between items-center mb-4">
                           <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
-                          <span className="text-sm text-gray-500">
+                          <span className={`text-sm ${product.stockQuantity < 5 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
                             {product.stockQuantity} left
                           </span>
                         </div>
@@ -288,6 +290,12 @@ export default function Shop() {
                           >
                             Add to Cart
                           </button>
+                        )}
+
+                        {product.stockQuantity < 5 && (
+                          <p className="text-xs text-red-600 mt-2 font-medium">
+                            ⚠️ Low stock - order soon!
+                          </p>
                         )}
                       </div>
                     </div>
