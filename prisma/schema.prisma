@@ -20,9 +20,9 @@ model User {
   password    String
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
+
   orders      Order[]
-  
+
   @@map("users")
 }
 
@@ -30,9 +30,9 @@ model Category {
   id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   products  Product[]
-  
+
   @@map("categories")
 }
 
@@ -46,26 +46,54 @@ model Product {
   categoryId  String   @map("category_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
+
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
-  
+
   @@map("products")
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String      @map("user_id")
-  totalAmount   Float       @map("total_amount")
-  status        OrderStatus @default(PENDING)
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique @map("order_number") // Human-readable like "ORD-001"
+  
+  // Customer Info  
+  userId        String        @map("user_id")
+  customerName  String        @map("customer_name")  // Store at time of order
+  customerEmail String        @map("customer_email") // Store at time of order
+  
+  // Order Status
+  status        OrderStatus   @default(PENDING)
+  
+  // Payment Info
   paymentMethod PaymentMethod @map("payment_method")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  paymentPin    String?       @map("payment_pin") // Last 4 digits of UPI transaction
   
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Delivery Info  
+  deliveryMethod DeliveryMethod @map("delivery_method")
+  roomNumber    String?       @map("room_number") // For delivery orders
+  
+  // Pricing
+  subtotal      Float
+  deliveryFee   Float         @default(0) @map("delivery_fee")
+  totalAmount   Float         @map("total_amount")
+  
+  // Timestamps
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  completedAt   DateTime?     @map("completed_at")
+  
+  // Admin notes
+  adminNotes    String?       @map("admin_notes")
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderItems    OrderItem[]
-  payment       Payment?
   
+  // Keep existing Payment relation for backwards compatibility (optional)
+  payment       Payment?
+
   @@map("orders")
 }
 
@@ -73,15 +101,20 @@ model OrderItem {
   id          String  @id @default(cuid())
   orderId     String  @map("order_id")
   productId   String  @map("product_id")
-  quantity    Int
-  priceAtTime Float   @map("price_at_time")
   
+  // Store product details at time of order
+  productName String  @map("product_name")
+  price       Float   // Price at time of order
+  quantity    Int
+  subtotal    Float   // price * quantity
+
   order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   @@map("order_items")
 }
 
+// Keep existing Payment model for backwards compatibility
 model Payment {
   id            String        @id @default(cuid())
   orderId       String        @unique @map("order_id")
@@ -91,9 +124,9 @@ model Payment {
   status        PaymentStatus @default(PENDING)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
-  
+
   order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
+
   @@map("payments")
 }
 
@@ -105,8 +138,12 @@ enum Role {
 enum OrderStatus {
   PENDING
   CONFIRMED
-  COMPLETED
-  CANCELLED
+  PREPARING      // New: Order being prepared
+  READY          // New: Ready for pickup/delivery
+  OUT_FOR_DELIVERY // New: On the way (delivery only)
+  DELIVERED      // New: Delivered to room
+  COMPLETED      // Existing: Final state
+  CANCELLED      // Existing
 }
 
 enum PaymentMethod {
@@ -118,4 +155,10 @@ enum PaymentStatus {
   PENDING
   VERIFIED
   FAILED
+  COMPLETED     // New: Payment fully processed
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
 }
