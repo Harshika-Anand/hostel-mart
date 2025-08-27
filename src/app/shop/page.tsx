@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCart } from '@/contexts/CartContext'
 
 interface Product {
   id: string
@@ -22,23 +23,25 @@ interface Category {
   name: string
 }
 
-interface CartItem {
-  productId: string
-  name: string
-  price: number
-  quantity: number
-  stockQuantity: number
-}
-
 export default function Shop() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
+
+  // Use the CartContext instead of local state
+  const {
+    cart,
+    addToCart: addToCartContext,
+    removeFromCart,
+    updateQuantity,
+    getCartTotal,
+    getCartCount,
+    isLoading: cartLoading
+  } = useCart()
 
   useEffect(() => {
     if (status === 'loading') return
@@ -78,54 +81,26 @@ export default function Shop() {
     ? products.filter(p => p.isAvailable && p.stockQuantity > 0)
     : products.filter(p => p.isAvailable && p.stockQuantity > 0 && p.category.id === selectedCategory)
 
+  // Updated to use CartContext method
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.productId === product.id)
-      if (existing) {
-        const newQuantity = Math.min(existing.quantity + 1, product.stockQuantity)
-        return prev.map(item =>
-          item.productId === product.id
-            ? { ...item, quantity: newQuantity }
-            : item
-        )
-      }
-      return [...prev, {
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        quantity: 1,
-        stockQuantity: product.stockQuantity
-      }]
+    addToCartContext({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      stockQuantity: product.stockQuantity,
+      quantity: 1
     })
   }
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.productId !== productId))
-  }
-
+  // Updated to use CartContext method
   const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId)
-      return
-    }
-
-    const product = products.find(p => p.id === productId)
-    if (!product) return
-
-    const maxQuantity = product.stockQuantity
-    const finalQuantity = Math.min(quantity, maxQuantity)
-
-    setCart(prev => prev.map(item =>
-      item.productId === productId 
-        ? { ...item, quantity: finalQuantity, stockQuantity: maxQuantity }
-        : item
-    ))
+    updateQuantity(productId, quantity)
   }
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const cartTotal = getCartTotal()
+  const cartItemCount = getCartCount()
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || loading || cartLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -174,11 +149,7 @@ export default function Shop() {
               </div>
               {cartItemCount > 0 && (
                 <button
-                  onClick={() => {
-                    // Store cart in localStorage before navigating
-                    localStorage.setItem('hostel-mart-cart', JSON.stringify(cart))
-                    router.push('/checkout')
-                  }}
+                  onClick={() => router.push('/checkout')}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium"
                 >
                   Checkout
