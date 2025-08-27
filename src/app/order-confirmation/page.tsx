@@ -37,10 +37,6 @@ interface Order {
   customerEmail: string
   paymentPin?: string
   orderItems: OrderItem[]
-  payment?: {
-    status: string
-    paymentProof?: string
-  }
 }
 
 export default function OrderConfirmationPage() {
@@ -141,12 +137,9 @@ export default function OrderConfirmationPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
-      case 'ready':
-      case 'delivered':
       case 'completed':
         return 'text-green-600 bg-green-50'
       case 'pending':
-      case 'preparing':
         return 'text-yellow-600 bg-yellow-50'
       case 'out_for_delivery':
         return 'text-blue-600 bg-blue-50'
@@ -180,27 +173,12 @@ export default function OrderConfirmationPage() {
             message: 'Your payment has been verified. Your order is being prepared.',
             icon: '✅'
           }
-        case 'preparing':
-          return {
-            title: 'Being Prepared',
-            message: 'Your order is currently being prepared by our team.',
-            icon: '👨‍🍳'
-          }
-        case 'ready':
-          return {
-            title: order.deliveryMethod === 'DELIVERY' ? 'Ready for Delivery!' : 'Ready for Pickup!',
-            message: order.deliveryMethod === 'DELIVERY' 
-              ? 'Your order is ready and will be delivered to your room shortly.' 
-              : 'Your order is ready! Come collect it from the pickup location.',
-            icon: '📦'
-          }
         case 'out_for_delivery':
           return {
             title: 'Out for Delivery',
             message: `Your order is on the way to room ${order.roomNumber}. Please be available to receive it.`,
             icon: '🚚'
           }
-        case 'delivered':
         case 'completed':
           return {
             title: 'Order Completed',
@@ -229,27 +207,12 @@ export default function OrderConfirmationPage() {
             message: 'Your order is confirmed and being prepared. You\'ll pay when you receive it.',
             icon: '✅'
           }
-        case 'preparing':
-          return {
-            title: 'Being Prepared',
-            message: 'Your order is currently being prepared by our team.',
-            icon: '👨‍🍳'
-          }
-        case 'ready':
-          return {
-            title: order.deliveryMethod === 'DELIVERY' ? 'Ready for Delivery!' : 'Ready for Pickup!',
-            message: order.deliveryMethod === 'DELIVERY' 
-              ? `Your order is ready for delivery to room ${order.roomNumber}. Pay ₹${order.totalAmount} in cash upon delivery.` 
-              : `Your order is ready for pickup! Pay ₹${order.totalAmount} in cash when you collect it.`,
-            icon: '📦'
-          }
         case 'out_for_delivery':
           return {
             title: 'Out for Delivery',
             message: `Your order is on the way to room ${order.roomNumber}. Please have ₹${order.totalAmount} ready in cash.`,
             icon: '🚚'
           }
-        case 'delivered':
         case 'completed':
           return {
             title: 'Order Completed',
@@ -398,16 +361,16 @@ export default function OrderConfirmationPage() {
                   <p>• You'll receive an update once your payment is confirmed</p>
                   <p>• This process usually takes 5-10 minutes</p>
                 </>
-              ) : order.status === 'CONFIRMED' || order.status === 'PREPARING' ? (
+              ) : order.status === 'CONFIRMED' ? (
                 <>
                   <p>• Your order is being prepared by our team</p>
                   <p>• You'll be notified when it's ready</p>
                   <p>• Estimated preparation time: 15-30 minutes</p>
                 </>
-              ) : order.status === 'READY' ? (
+              ) : order.status === 'OUT_FOR_DELIVERY' ? (
                 order.deliveryMethod === 'DELIVERY' ? (
                   <>
-                    <p>• Your order is ready and will be delivered shortly</p>
+                    <p>• Your order is out for delivery</p>
                     <p>• Please be available at room {order.roomNumber}</p>
                     <p>• Our delivery person will contact you</p>
                   </>
@@ -431,20 +394,26 @@ export default function OrderConfirmationPage() {
                   <p>• Stock is being reserved for you</p>
                   <p>• You'll be notified when it's ready</p>
                 </>
-              ) : order.status === 'READY' ? (
+              ) : order.status === 'CONFIRMED' ? (
                 order.deliveryMethod === 'DELIVERY' ? (
                   <>
-                    <p>• Your order is ready for delivery to room {order.roomNumber}</p>
+                    <p>• Your order is being prepared for delivery to room {order.roomNumber}</p>
                     <p>• Please have ₹{order.totalAmount} ready in cash</p>
-                    <p>• Our delivery person will arrive shortly</p>
+                    <p>• Estimated preparation time: 15-30 minutes</p>
                   </>
                 ) : (
                   <>
-                    <p>• Your order is ready for pickup!</p>
+                    <p>• Your order is being prepared for pickup</p>
                     <p>• Come to the pickup location with ₹{order.totalAmount} in cash</p>
                     <p>• Please bring exact change if possible</p>
                   </>
                 )
+              ) : order.status === 'OUT_FOR_DELIVERY' ? (
+                <>
+                  <p>• Your order is out for delivery to room {order.roomNumber}</p>
+                  <p>• Please have ₹{order.totalAmount} ready in cash</p>
+                  <p>• Our delivery person will arrive shortly</p>
+                </>
               ) : (
                 <>
                   <p>• Your order process is complete</p>

@@ -1,3 +1,4 @@
+// File: src/app/api/admin/orders/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -37,6 +38,7 @@ export async function GET(
             }
           }
         }
+        // Removed payment include - not in schema
       }
     })
 
@@ -71,15 +73,15 @@ export async function PATCH(
 
     console.log('Updating order:', id, 'with:', updates)
 
+    // Only allow updates to fields that exist in the schema
     const allowedUpdates = [
       'status', 
       'paymentStatus', 
       'adminNotes', 
       'deliveryMethod', 
       'roomNumber',
-      'estimatedDeliveryTime',
       'paymentMethod',
-      'transactionId'
+      'paymentPin'
     ]
     const isValidOperation = Object.keys(updates).every(key => allowedUpdates.includes(key))
 
@@ -97,28 +99,36 @@ export async function PATCH(
 
     const orderUpdates: any = {}
 
+    // Handle status updates - only use schema-defined statuses
     if (updates.status) {
-        const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
-        if (!validStatuses.includes(updates.status)) {
-          return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-        }
-      
-        orderUpdates.status = updates.status
-      
-        // If order is being completed, set completedAt
-        if (updates.status === 'COMPLETED' || updates.status === 'OUT_FOR_DELIVERY') {
-          orderUpdates.completedAt = new Date()
-        }
+      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
+      if (!validStatuses.includes(updates.status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
       }
-      
+    
+      orderUpdates.status = updates.status
+    
+      // If order is being completed, set completedAt
+      if (updates.status === 'COMPLETED') {
+        orderUpdates.completedAt = new Date()
+      }
+    }
 
+    // Handle payment status updates
+    if (updates.paymentStatus) {
+      const validPaymentStatuses = ['PENDING', 'VERIFIED', 'COMPLETED']
+      if (!validPaymentStatuses.includes(updates.paymentStatus)) {
+        return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
+      }
+      orderUpdates.paymentStatus = updates.paymentStatus
+    }
+
+    // Handle other allowed updates
     if (updates.adminNotes !== undefined) orderUpdates.adminNotes = updates.adminNotes
     if (updates.deliveryMethod) orderUpdates.deliveryMethod = updates.deliveryMethod
     if (updates.roomNumber) orderUpdates.roomNumber = updates.roomNumber
-    if (updates.estimatedDeliveryTime) orderUpdates.estimatedDeliveryTime = new Date(updates.estimatedDeliveryTime)
     if (updates.paymentMethod) orderUpdates.paymentMethod = updates.paymentMethod
-    if (updates.paymentStatus) orderUpdates.paymentStatus = updates.paymentStatus
-    if (updates.transactionId) orderUpdates.paymentPin = updates.transactionId // reuse paymentPin field
+    if (updates.paymentPin) orderUpdates.paymentPin = updates.paymentPin
 
     const result = await prisma.order.update({
       where: { id },
@@ -141,6 +151,7 @@ export async function PATCH(
             }
           }
         }
+        // Removed payment include - not in schema
       }
     })
 
@@ -169,15 +180,38 @@ export async function DELETE(
     const { id } = await context.params
 
     const existingOrder = await prisma.order.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        orderItems: {
+          include: {
+            product: true
+          }
+        }
+      }
     })
 
     if (!existingOrder) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
+    // Restore stock and delete order
     await prisma.$transaction(async (tx) => {
+      // Restore product stock
+      for (const item of existingOrder.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stockQuantity: {
+              increment: item.quantity
+            }
+          }
+        })
+      }
+
+      // Delete order items first (due to foreign key constraints)
       await tx.orderItem.deleteMany({ where: { orderId: id } })
+      
+      // Delete the order
       await tx.order.delete({ where: { id } })
     })
 

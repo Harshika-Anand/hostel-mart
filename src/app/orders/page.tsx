@@ -34,10 +34,6 @@ interface Order {
   completedAt?: string
   adminNotes?: string
   orderItems: OrderItem[]
-  payment?: {
-    status: string
-    paymentProof?: string
-  }
 }
 
 export default function OrdersPage() {
@@ -102,19 +98,16 @@ export default function OrdersPage() {
   }
 
   const canCancelOrder = (order: Order) => {
-    const nonCancellableStatuses = ['DELIVERED', 'COMPLETED', 'CANCELLED', 'OUT_FOR_DELIVERY']
+    const nonCancellableStatuses = ['COMPLETED', 'CANCELLED', 'OUT_FOR_DELIVERY']
     return !nonCancellableStatuses.includes(order.status)
   }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
-      case 'ready':
-      case 'delivered':
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200'
       case 'pending':
-      case 'preparing':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200'
       case 'out_for_delivery':
         return 'text-blue-600 bg-blue-50 border-blue-200'
@@ -132,8 +125,6 @@ export default function OrdersPage() {
         return 'text-green-600 bg-green-50'
       case 'pending':
         return 'text-yellow-600 bg-yellow-50'
-      case 'failed':
-        return 'text-red-600 bg-red-50'
       default:
         return 'text-gray-600 bg-gray-50'
     }
@@ -166,27 +157,12 @@ export default function OrdersPage() {
             message: 'Your payment has been verified. Your order is being prepared.',
             icon: '✅'
           }
-        case 'preparing':
-          return {
-            title: 'Being Prepared',
-            message: 'Your order is currently being prepared.',
-            icon: '👨‍🍳'
-          }
-        case 'ready':
-          return {
-            title: 'Ready for Pickup!',
-            message: order.deliveryMethod === 'DELIVERY' 
-              ? 'Your order is ready for delivery.' 
-              : 'Your order is ready for pickup!',
-            icon: '📦'
-          }
         case 'out_for_delivery':
           return {
             title: 'Out for Delivery',
             message: 'Your order is on the way to your room.',
             icon: '🚚'
           }
-        case 'delivered':
         case 'completed':
           return {
             title: 'Order Completed',
@@ -215,27 +191,12 @@ export default function OrdersPage() {
             message: 'Your order is confirmed and being prepared.',
             icon: '✅'
           }
-        case 'preparing':
-          return {
-            title: 'Being Prepared',
-            message: 'Your order is currently being prepared.',
-            icon: '👨‍🍳'
-          }
-        case 'ready':
-          return {
-            title: 'Ready for Pickup!',
-            message: order.deliveryMethod === 'DELIVERY' 
-              ? 'Your order is ready for delivery. Pay ₹' + order.totalAmount + ' in cash.' 
-              : 'Your order is ready for pickup! Pay ₹' + order.totalAmount + ' in cash.',
-            icon: '📦'
-          }
         case 'out_for_delivery':
           return {
             title: 'Out for Delivery',
             message: `Your order is on the way. Pay ₹${order.totalAmount} in cash upon delivery.`,
             icon: '🚚'
           }
-        case 'delivered':
         case 'completed':
           return {
             title: 'Order Completed',
@@ -458,11 +419,6 @@ export default function OrdersPage() {
                       >
                         View Details
                       </button>
-                      {order.status === 'READY' && order.deliveryMethod === 'PICKUP' && (
-                        <div className="px-4 py-2 text-sm bg-green-100 text-green-800 rounded font-medium">
-                          Ready for Pickup!
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

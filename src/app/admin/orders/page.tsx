@@ -42,11 +42,6 @@ interface Order {
     roomNumber?: string
   }
   orderItems: OrderItem[]
-  payment?: {
-    status: string
-    paymentProof?: string
-    paymentPin?: string
-  }
   paymentPin?: string
 }
 
@@ -167,12 +162,9 @@ export default function AdminOrdersPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'confirmed':
-      case 'ready':
-      case 'delivered':
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200'
       case 'pending':
-      case 'preparing':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200'
       case 'out_for_delivery':
         return 'text-blue-600 bg-blue-50 border-blue-200'
@@ -190,8 +182,6 @@ export default function AdminOrdersPage() {
         return 'text-green-600 bg-green-50'
       case 'pending':
         return 'text-yellow-600 bg-yellow-50'
-      case 'failed':
-        return 'text-red-600 bg-red-50'
       default:
         return 'text-gray-600 bg-gray-50'
     }
@@ -201,14 +191,12 @@ export default function AdminOrdersPage() {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
+  // Updated to only use schema-defined statuses
   const getNextStatus = (currentStatus: string, paymentMethod: string) => {
     const statusFlow = {
       'PENDING': paymentMethod === 'UPI' ? ['CONFIRMED', 'CANCELLED'] : ['CONFIRMED', 'CANCELLED'],
-      'CONFIRMED': ['PREPARING', 'CANCELLED'],
-      'PREPARING': ['READY', 'CANCELLED'],
-      'READY': ['OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED'],
-      'OUT_FOR_DELIVERY': ['DELIVERED'],
-      'DELIVERED': ['COMPLETED'],
+      'CONFIRMED': ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+      'OUT_FOR_DELIVERY': ['COMPLETED'],
       'COMPLETED': [],
       'CANCELLED': []
     }
@@ -253,10 +241,7 @@ export default function AdminOrdersPage() {
                   <option value="all">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="CONFIRMED">Confirmed</option>
-                  <option value="PREPARING">Preparing</option>
-                  <option value="READY">Ready</option>
                   <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-                  <option value="DELIVERED">Delivered</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>

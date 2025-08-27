@@ -44,8 +44,7 @@ export async function GET(
               }
             }
           }
-        },
-        payment: true
+        }
       }
     })
 
@@ -83,7 +82,7 @@ export async function PATCH(
     const { id } = await context.params
     const updates = await request.json()
 
-    // Validate the update data
+    // Validate the update data - only allow schema-defined fields
     const allowedUpdates = ['status', 'paymentStatus', 'adminNotes', 'deliveryMethod', 'roomNumber']
     const isValidOperation = Object.keys(updates).every(key => allowedUpdates.includes(key))
 
@@ -91,38 +90,50 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid updates' }, { status: 400 })
     }
 
-    // Handle status transitions
+    // Prepare the update object with proper typing
+    const updateData: any = {}
+
+    // Handle status transitions - only use schema-defined statuses
     if (updates.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED']
+      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
       if (!validStatuses.includes(updates.status)) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
       }
 
+      updateData.status = updates.status
+
       // If order is being completed, set completedAt
-      if (updates.status === 'COMPLETED' || updates.status === 'DELIVERED') {
-        updates.completedAt = new Date()
+      if (updates.status === 'COMPLETED') {
+        updateData.completedAt = new Date()
       }
     }
 
-    // Handle payment status updates
+    // Handle payment status updates - only use schema-defined statuses
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['PENDING', 'VERIFIED', 'FAILED', 'COMPLETED']
+      const validPaymentStatuses = ['PENDING', 'VERIFIED', 'COMPLETED']
       if (!validPaymentStatuses.includes(updates.paymentStatus)) {
         return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
       }
+
+      updateData.paymentStatus = updates.paymentStatus
 
       // If payment is verified for UPI orders, update order status too
       if (updates.paymentStatus === 'VERIFIED') {
         const order = await prisma.order.findUnique({ where: { id } })
         if (order?.paymentMethod === 'UPI' && order.status === 'PENDING') {
-          updates.status = 'CONFIRMED'
+          updateData.status = 'CONFIRMED'
         }
       }
     }
 
+    // Handle other updates
+    if (updates.adminNotes !== undefined) updateData.adminNotes = updates.adminNotes
+    if (updates.deliveryMethod) updateData.deliveryMethod = updates.deliveryMethod
+    if (updates.roomNumber) updateData.roomNumber = updates.roomNumber
+
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: updates,
+      data: updateData,
       include: {
         user: {
           select: {
@@ -140,8 +151,7 @@ export async function PATCH(
               }
             }
           }
-        },
-        payment: true
+        }
       }
     })
 
@@ -190,8 +200,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Check if order can be cancelled
-    const nonCancellableStatuses = ['DELIVERED', 'COMPLETED', 'CANCELLED']
+    // Check if order can be cancelled - only use schema-defined statuses
+    const nonCancellableStatuses = ['COMPLETED', 'CANCELLED']
     if (nonCancellableStatuses.includes(order.status)) {
       return NextResponse.json({ 
         error: `Cannot cancel order with status ${order.status}` 
@@ -208,7 +218,7 @@ export async function DELETE(
           completedAt: new Date(),
           adminNotes: session.user.role === 'CUSTOMER' 
             ? 'Cancelled by customer' 
-            : order.adminNotes
+            : order.adminNotes || undefined
         }
       })
 
@@ -221,14 +231,6 @@ export async function DELETE(
               increment: item.quantity
             }
           }
-        })
-      }
-
-      // Update payment status if exists
-      if (order.payment) {
-        await tx.payment.update({
-          where: { orderId: id },
-          data: { status: 'FAILED' }
         })
       }
 

@@ -22,7 +22,7 @@ async function generateOrderNumber(): Promise<string> {
   })
 
   let sequence = 1
-  if (latestOrder) {
+  if (latestOrder && latestOrder.orderNumber) {
     const lastSequence = parseInt(latestOrder.orderNumber.split('-').pop() || '0')
     sequence = lastSequence + 1
   }
@@ -80,8 +80,7 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-        },
-        payment: true
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -142,7 +141,13 @@ export async function POST(request: NextRequest) {
 
     // Verify products and calculate totals
     let calculatedSubtotal = 0
-    const orderItemsData = []
+    const orderItemsData: Array<{
+      productId: string
+      productName: string
+      price: number
+      quantity: number
+      subtotal: number
+    }> = []
 
     for (const item of items) {
       const product = await prisma.product.findUnique({
@@ -196,7 +201,7 @@ export async function POST(request: NextRequest) {
           customerEmail: user.email,
           status: 'PENDING',
           paymentMethod: paymentMethod as 'UPI' | 'COD',
-          paymentStatus: paymentMethod === 'UPI' ? 'PENDING' : 'COMPLETED',
+          paymentStatus: paymentMethod === 'UPI' ? 'PENDING' : 'PENDING', // Both start as PENDING
           paymentPin: paymentMethod === 'UPI' ? paymentPin : null,
           deliveryMethod: deliveryMethod as 'PICKUP' | 'DELIVERY',
           roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : (user.roomNumber || null),
@@ -228,18 +233,6 @@ export async function POST(request: NextRequest) {
             stockQuantity: {
               decrement: item.quantity
             }
-          }
-        })
-      }
-
-      // Create legacy payment record for backwards compatibility (optional)
-      if (paymentMethod === 'UPI') {
-        await tx.payment.create({
-          data: {
-            orderId: newOrder.id,
-            amount: totalAmount,
-            paymentMethod: 'UPI',
-            status: 'PENDING'
           }
         })
       }

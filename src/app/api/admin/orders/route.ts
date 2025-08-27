@@ -18,12 +18,19 @@ export async function GET(request: NextRequest) {
 
     const whereClause: any = {}
     
+    // Only filter by schema-defined statuses
     if (status && status !== 'all') {
-      whereClause.status = status
+      const validStatuses = ['PENDING', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED']
+      if (validStatuses.includes(status)) {
+        whereClause.status = status
+      }
     }
     
     if (paymentMethod && paymentMethod !== 'all') {
-      whereClause.paymentMethod = paymentMethod
+      const validPaymentMethods = ['UPI', 'COD']
+      if (validPaymentMethods.includes(paymentMethod)) {
+        whereClause.paymentMethod = paymentMethod
+      }
     }
 
     const orders = await prisma.order.findMany({
@@ -46,6 +53,7 @@ export async function GET(request: NextRequest) {
             }
           }
         }
+        // Removed payment include - not in schema
       },
       orderBy: {
         createdAt: 'desc'

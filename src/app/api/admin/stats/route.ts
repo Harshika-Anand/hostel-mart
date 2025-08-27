@@ -1,3 +1,4 @@
+// File: src/app/api/admin/stats/route.ts
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -32,7 +33,7 @@ export async function GET() {
       prisma.order.aggregate({
         where: {
           createdAt: { gte: today, lt: tomorrow },
-          status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] }
+          status: { in: [OrderStatus.COMPLETED] }
         },
         _sum: { totalAmount: true }
       }),
@@ -61,7 +62,7 @@ export async function GET() {
       prisma.order.aggregate({
         where: {
           createdAt: { gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) },
-          status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] }
+          status: { in: [OrderStatus.COMPLETED] }
         },
         _sum: { totalAmount: true }
       }),
@@ -69,7 +70,7 @@ export async function GET() {
       prisma.order.aggregate({
         where: {
           createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), 1) },
-          status: { in: [OrderStatus.COMPLETED, OrderStatus.DELIVERED] }
+          status: { in: [OrderStatus.COMPLETED] }
         },
         _sum: { totalAmount: true }
       }),
@@ -95,7 +96,7 @@ export async function GET() {
       monthlyRevenue: monthlyRevenue._sum.totalAmount ?? 0,
       recentOrders: recentOrders.map(order => ({
         id: order.id,
-        orderNumber: order.orderNumber,
+        orderNumber: order.orderNumber || `#${order.id.slice(-8)}`, // Handle null orderNumber
         customerName: order.customerName || order.user?.name || "Unknown",
         totalAmount: order.totalAmount,
         status: order.status,
