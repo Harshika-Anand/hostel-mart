@@ -197,7 +197,7 @@ export default function CheckoutPage() {
                   />
                   <div className="flex-1">
                     <span className="font-medium">Self Pickup</span>
-                    <p className="text-sm text-gray-500">Collect from our room - FREE</p>
+                    <p className="text-sm text-gray-500">Collect from our room (401) - FREE</p>
                   </div>
                   <span className="font-semibold text-green-600">Free</span>
                 </label>
@@ -320,7 +320,7 @@ export default function CheckoutPage() {
                   <div className="text-sm text-green-800 space-y-1">
                     {deliveryMethod === 'PICKUP' ? (
                       <>
-                        <p>1. Come to our room for pickup</p>
+                        <p>1. Come to room 401 for pickup</p>
                         <p>2. Pay ₹{finalTotal} in cash</p>
                         <p>3. Collect your items</p>
                       </>
@@ -328,7 +328,7 @@ export default function CheckoutPage() {
                       <>
                         <p>1. We'll deliver to room {roomNumber || '[Your Room]'}</p>
                         <p>2. Pay ₹{finalTotal} in cash during delivery</p>
-                        <p>3. Keep exact change if possible</p>
+                        <p>3. Keep exact change ONLY</p>
                       </>
                     )}
                   </div>
