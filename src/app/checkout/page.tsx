@@ -16,10 +16,18 @@ export default function CheckoutPage() {
   const { cart, clearCart, getCartTotal } = useCart()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI')
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('PICKUP')
-  const [roomNumber, setRoomNumber] = useState('')
+  const [customRoomNumber, setCustomRoomNumber] = useState('')
+  const [useCustomRoom, setUseCustomRoom] = useState(false)
   const [paymentPin, setPaymentPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Auto-switch to UPI if delivery is selected and cash was chosen
+  useEffect(() => {
+    if (deliveryMethod === 'DELIVERY' && paymentMethod === 'CASH') {
+      setPaymentMethod('UPI')
+    }
+  }, [deliveryMethod, paymentMethod])
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -32,6 +40,12 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryMethod === 'DELIVERY' ? 10 : 0
   const finalTotal = cartTotal + deliveryFee
 
+  const getRoomNumber = () => {
+    if (deliveryMethod !== 'DELIVERY') return null
+    if (useCustomRoom) return customRoomNumber
+    return session?.user?.roomNumber || null
+  }
+
   const placeOrder = async () => {
     if (cart.length === 0) {
       setError('Your cart is empty')
@@ -43,9 +57,12 @@ export default function CheckoutPage() {
       return
     }
 
-    if (deliveryMethod === 'DELIVERY' && !roomNumber) {
-      setError('Please enter your room number for delivery')
-      return
+    if (deliveryMethod === 'DELIVERY') {
+      const roomNumber = getRoomNumber()
+      if (!roomNumber) {
+        setError('Please provide a room number for delivery')
+        return
+      }
     }
 
     setLoading(true)
@@ -68,7 +85,7 @@ export default function CheckoutPage() {
 
         // Delivery info - matching DeliveryMethod enum
         deliveryMethod, // 'PICKUP' | 'DELIVERY'
-        roomNumber: deliveryMethod === 'DELIVERY' ? roomNumber : null,
+        roomNumber: getRoomNumber(),
 
         // Financial calculations
         subtotal: cartTotal,
@@ -219,18 +236,59 @@ export default function CheckoutPage() {
                 </label>
               </div>
 
+              {/* Room Number Section for Delivery */}
               {deliveryMethod === 'DELIVERY' && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Room Number *
-                  </label>
-                  <input
-                    type="text"
-                    value={roomNumber}
-                    onChange={(e) => setRoomNumber(e.target.value)}
-                    placeholder="e.g., A-101, B-205"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-3">Delivery Address</h3>
+                  
+                  {session?.user?.roomNumber ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                        <div>
+                          <span className="font-medium text-gray-900">Room: {session.user.roomNumber}</span>
+                          <p className="text-sm text-gray-500">From your profile</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomRoom(!useCustomRoom)}
+                          className="text-blue-600 text-sm hover:text-blue-700"
+                        >
+                          {useCustomRoom ? 'Use Profile Room' : 'Use Different Room'}
+                        </button>
+                      </div>
+
+                      {useCustomRoom && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Custom Room Number
+                          </label>
+                          <input
+                            type="text"
+                            value={customRoomNumber}
+                            onChange={(e) => setCustomRoomNumber(e.target.value)}
+                            placeholder="e.g., A-101, B-205"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Room Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={customRoomNumber}
+                        onChange={(e) => setCustomRoomNumber(e.target.value)}
+                        placeholder="e.g., A-101, B-205"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        You can update your room number in your profile to avoid entering it each time.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -255,19 +313,32 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className={`flex items-center p-4 border rounded-lg ${
+                  deliveryMethod === 'DELIVERY' 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                    : 'cursor-pointer hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="payment"
                     value="CASH"
                     checked={paymentMethod === 'CASH'}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    disabled={deliveryMethod === 'DELIVERY'}
                     className="mr-3"
                   />
                   <div className="flex-1">
                     <span className="font-medium">Cash Payment</span>
-                    <p className="text-sm text-gray-500">Pay in cash on {deliveryMethod === 'DELIVERY' ? 'delivery' : 'pickup'}</p>
+                    <p className="text-sm text-gray-500">
+                      {deliveryMethod === 'DELIVERY' 
+                        ? 'Cash payment not available for delivery orders' 
+                        : 'Pay in cash on pickup'
+                      }
+                    </p>
                   </div>
+                  {deliveryMethod === 'DELIVERY' && (
+                    <span className="text-xs text-red-600 font-medium">Not Available</span>
+                  )}
                 </label>
               </div>
 
@@ -314,23 +385,14 @@ export default function CheckoutPage() {
               )}
 
               {/* Cash Payment Details */}
-              {paymentMethod === 'CASH' && (
+              {paymentMethod === 'CASH' && deliveryMethod === 'PICKUP' && (
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-semibold text-green-900 mb-3">Cash Payment Instructions</h3>
                   <div className="text-sm text-green-800 space-y-1">
-                    {deliveryMethod === 'PICKUP' ? (
-                      <>
-                        <p>1. Come to room 401 for pickup</p>
-                        <p>2. Pay ₹{finalTotal} in cash</p>
-                        <p>3. Collect your items</p>
-                      </>
-                    ) : (
-                      <>
-                        <p>1. We'll deliver to room {roomNumber || '[Your Room]'}</p>
-                        <p>2. Pay ₹{finalTotal} in cash during delivery</p>
-                        <p>3. Keep exact change ONLY</p>
-                      </>
-                    )}
+                    <p>1. Come to room 401 for pickup</p>
+                    <p>2. Pay ₹{finalTotal} in cash</p>
+                    <p>3. Collect your items</p>
+                    <p className="font-medium text-green-900 mt-2">💡 Tip: Keep exact change ready!</p>
                   </div>
                 </div>
               )}
