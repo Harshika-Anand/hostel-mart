@@ -1,7 +1,7 @@
 // File: src/app/orders/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -36,6 +36,12 @@ interface Order {
   orderItems: OrderItem[]
 }
 
+interface StatusInfo {
+  title: string
+  message: string
+  icon: string
+}
+
 export default function OrdersPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -44,6 +50,23 @@ export default function OrdersPage() {
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState<string | null>(null)
 
+  const fetchOrders = useCallback(async () => {
+    try {
+      setError('')
+      const response = await fetch('/api/orders')
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders')
+      }
+      const ordersData: Order[] = await response.json()
+      setOrders(ordersData)
+    } catch (fetchError) {
+      console.error('Error fetching orders:', fetchError)
+      setError('Failed to load orders. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (status === 'loading') return
     if (!session) {
@@ -51,24 +74,7 @@ export default function OrdersPage() {
       return
     }
     fetchOrders()
-  }, [session, status, router])
-
-  const fetchOrders = async () => {
-    try {
-      setError('')
-      const response = await fetch('/api/orders')
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders')
-      }
-      const ordersData = await response.json()
-      setOrders(ordersData)
-    } catch (error) {
-      console.error('Error fetching orders:', error)
-      setError('Failed to load orders. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [session, status, router, fetchOrders])
 
   const cancelOrder = async (orderId: string) => {
     if (!confirm('Are you sure you want to cancel this order?')) {
@@ -86,12 +92,15 @@ export default function OrdersPage() {
         throw new Error(errorData.error || 'Failed to cancel order')
       }
 
-      // Refresh orders list
       fetchOrders()
       alert('Order cancelled successfully')
-    } catch (error: any) {
-      console.error('Error cancelling order:', error)
-      alert(error.message || 'Failed to cancel order')
+    } catch (cancelError) {
+      console.error('Error cancelling order:', cancelError)
+      if (cancelError instanceof Error) {
+        alert(cancelError.message || 'Failed to cancel order')
+      } else {
+        alert('Failed to cancel order')
+      }
     } finally {
       setCancelling(null)
     }
@@ -134,7 +143,7 @@ export default function OrdersPage() {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
-  const getStatusMessage = (order: Order) => {
+  const getStatusMessage = (order: Order): StatusInfo => {
     if (order.status === 'CANCELLED') {
       return {
         title: 'Order Cancelled',
@@ -366,18 +375,18 @@ export default function OrdersPage() {
 
                     {/* Order Summary */}
                     <div className="border-t border-gray-200 mt-4 pt-4">
-                      <div className="space-y-1 text-sm text-gray-300">
+                      <div className="space-y-1 text-sm text-gray-600">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Subtotal:</span>
+                          <span>Subtotal:</span>
                           <span>₹{order.subtotal}</span>
                         </div>
                         {order.deliveryFee > 0 && (
-                          <div className="flex justify-between text-gray-300">
-                            <span className="text-gray-600">Delivery Fee:</span>
+                          <div className="flex justify-between">
+                            <span>Delivery Fee:</span>
                             <span>₹{order.deliveryFee}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-semibold text-base text-gray-300">
+                        <div className="flex justify-between font-semibold text-base text-gray-900">
                           <span>Total:</span>
                           <span>₹{order.totalAmount}</span>
                         </div>

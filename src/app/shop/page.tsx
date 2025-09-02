@@ -105,7 +105,6 @@ export default function Shop() {
   }
 
   const cartTotal = getCartTotal()
-  const cartItemCount = getCartCount()
 
   if (status === 'loading' || loading || cartLoading) {
     return (
@@ -148,7 +147,7 @@ export default function Shop() {
             </p>
             <div className="text-4xl mb-4">😴</div>
             <p className="text-sm text-gray-500">
-              We'll be back soon with fresh snacks and treats!
+              We&apos;ll be back soon with fresh snacks and treats!
             </p>
             <button
               onClick={() => router.push('/')}
@@ -303,20 +302,7 @@ export default function Shop() {
 
                   return (
                     <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-md transition">
-                      {/* Product Image */}
-                      {product.imageUrl && (
-                        <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-t-lg overflow-hidden">
-                          <img 
-                            src={product.imageUrl} 
-                            alt={product.name}
-                            className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      )}
+        
                       
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-3">

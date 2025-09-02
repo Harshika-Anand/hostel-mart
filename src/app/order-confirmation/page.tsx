@@ -1,7 +1,7 @@
 // File: src/app/order-confirmation/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -41,6 +41,12 @@ interface Order {
   orderItems: OrderItem[]
 }
 
+interface StatusInfo {
+  title: string
+  message: string
+  icon: string
+}
+
 export default function OrderConfirmationPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -50,6 +56,35 @@ export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const fetchOrder = useCallback(async () => {
+    if (!orderId) return
+    
+    try {
+      setError('')
+      const response = await fetch(`/api/orders/${orderId}`)
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Order not found')
+        }
+        if (response.status === 403) {
+          throw new Error('Access denied')
+        }
+        throw new Error('Failed to load order')
+      }
+      const orderData: Order = await response.json()
+      setOrder(orderData)
+    } catch (fetchError) {
+      console.error('Error fetching order:', fetchError)
+      if (fetchError instanceof Error) {
+        setError(fetchError.message || 'Failed to load order details')
+      } else {
+        setError('Failed to load order details')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -63,30 +98,7 @@ export default function OrderConfirmationPage() {
     }
 
     fetchOrder()
-  }, [status, orderId, router])
-
-  const fetchOrder = async () => {
-    try {
-      setError('')
-      const response = await fetch(`/api/orders/${orderId}`)
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Order not found')
-        }
-        if (response.status === 403) {
-          throw new Error('Access denied')
-        }
-        throw new Error('Failed to load order')
-      }
-      const orderData = await response.json()
-      setOrder(orderData)
-    } catch (error: any) {
-      console.error('Error fetching order:', error)
-      setError(error.message || 'Failed to load order details')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [status, orderId, router, fetchOrder])
 
   if (status === 'loading' || loading) {
     return (
@@ -153,7 +165,7 @@ export default function OrderConfirmationPage() {
     }
   }
 
-  const getStatusMessage = () => {
+  const getStatusMessage = (): StatusInfo => {
     if (order.status === 'CANCELLED') {
       return {
         title: 'Order Cancelled',
@@ -167,7 +179,7 @@ export default function OrderConfirmationPage() {
         case 'pending':
           return {
             title: 'Payment Under Review',
-            message: 'Your UPI payment is being verified. You\'ll be notified once confirmed. This usually takes a few minutes.',
+            message: 'Your UPI payment is being verified. You&apos;ll be notified once confirmed. This usually takes a few minutes.',
             icon: '⏳'
           }
         case 'confirmed':
@@ -262,7 +274,7 @@ export default function OrderConfirmationPage() {
         <div className="bg-white rounded-lg shadow p-8 text-center mb-8">
           <div className="text-6xl mb-4">{statusInfo.icon}</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{statusInfo.title}</h2>
-          <p className="text-gray-600 mb-4 max-w-2xl mx-auto">{statusInfo.message}</p>
+          <p className="text-gray-600 mb-4 max-w-2xl mx-auto" dangerouslySetInnerHTML={{ __html: statusInfo.message }} />
           <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
             Status: {order.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </div>
@@ -361,19 +373,19 @@ export default function OrderConfirmationPage() {
 
         {/* Next Steps */}
         <div className="bg-blue-50 rounded-lg p-6 mt-8">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">What's Next?</h3>
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">What&apos;s Next?</h3>
           <div className="text-blue-800 space-y-2">
             {order.paymentMethod === 'UPI' ? (
               order.status === 'PENDING' ? (
                 <>
                   <p>• Your UPI payment is being verified by our admin</p>
-                  <p>• You'll receive an update once your payment is confirmed</p>
+                  <p>• You&apos;ll receive an update once your payment is confirmed</p>
                   <p>• This process usually takes 5-10 minutes</p>
                 </>
               ) : order.status === 'CONFIRMED' ? (
                 <>
                   <p>• Your snacks are being packed by our team</p>
-                  <p>• You'll be notified when they're ready</p>
+                  <p>• You&apos;ll be notified when they&apos;re ready</p>
                   <p>• Estimated packing time: 2-5 minutes</p>
                 </>
               ) : order.status === 'READY' ? (
@@ -401,7 +413,7 @@ export default function OrderConfirmationPage() {
                 <>
                   <p>• Your cash payment order is being processed</p>
                   <p>• Stock is being reserved for you</p>
-                  <p>• You'll be notified when it's ready</p>
+                  <p>• You&apos;ll be notified when it&apos;s ready</p>
                 </>
               ) : order.status === 'CONFIRMED' ? (
                 <>

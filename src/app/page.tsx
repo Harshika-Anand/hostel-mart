@@ -1,8 +1,16 @@
-// File: src/app/page.tsx (REPLACE existing)
+// File: src/app/page.tsx
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+
+interface AdminStats {
+  todayOrders: number
+  todayRevenue: number
+  pendingOrders: number
+  totalProducts: number
+}
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -128,7 +136,7 @@ export default function Home() {
 
 // Admin Stats Component
 function AdminStats() {
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -139,7 +147,7 @@ function AdminStats() {
     try {
       const response = await fetch('/api/admin/stats')
       if (response.ok) {
-        const data = await response.json()
+        const data: AdminStats = await response.json()
         setStats(data)
       }
     } catch (error) {
@@ -161,7 +169,7 @@ function AdminStats() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-xl font-semibold text-gray-900 mb-6">Today's Overview</h3>
+      <h3 className="text-xl font-semibold text-gray-900 mb-6">Today&apos;s Overview</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">{stats.todayOrders || 0}</div>
@@ -183,5 +191,3 @@ function AdminStats() {
     </div>
   )
 }
-
-import { useState, useEffect } from 'react'

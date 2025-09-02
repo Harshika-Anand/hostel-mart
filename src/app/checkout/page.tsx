@@ -1,10 +1,11 @@
-// File: src/app/checkout/page.tsx (REPLACE existing)
+// File: src/app/checkout/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import Image from 'next/image'
 
 // Types matching your Prisma schema
 type PaymentMethod = 'UPI' | 'CASH'
@@ -13,6 +14,10 @@ type DeliveryMethod = 'PICKUP' | 'DELIVERY'
 interface ShopSettings {
   isOpen: boolean
   message?: string
+}
+
+interface OrderError {
+  message: string
 }
 
 export default function CheckoutPage() {
@@ -26,7 +31,6 @@ export default function CheckoutPage() {
   const [paymentPin, setPaymentPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // ADD THESE STATE VARIABLES
   const [shopSettings, setShopSettings] = useState<ShopSettings>({ isOpen: false })
   const [shopLoading, setShopLoading] = useState(true)
 
@@ -55,9 +59,8 @@ export default function CheckoutPage() {
           const data = await response.json()
           setShopSettings(data)
         }
-      } catch (error) {
-        console.error('Error fetching shop status:', error)
-        // Default to closed if can't fetch
+      } catch (fetchError) {
+        console.error('Error fetching shop status:', fetchError)
         setShopSettings({ isOpen: false })
       } finally {
         setShopLoading(false)
@@ -101,7 +104,6 @@ export default function CheckoutPage() {
 
     try {
       const orderData = {
-        // Order items - matching your schema structure
         items: cart.map(item => ({
           productId: item.productId,
           productName: item.name,
@@ -109,21 +111,13 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           subtotal: item.price * item.quantity
         })),
-
-        // Payment info - matching PaymentMethod enum
-        paymentMethod, // 'UPI' | 'CASH'
+        paymentMethod,
         paymentPin: paymentMethod === 'UPI' ? paymentPin : null,
-
-        // Delivery info - matching DeliveryMethod enum
-        deliveryMethod, // 'PICKUP' | 'DELIVERY'
+        deliveryMethod,
         roomNumber: getRoomNumber(),
-
-        // Financial calculations
         subtotal: cartTotal,
         deliveryFee,
         totalAmount: finalTotal,
-
-        // Customer info (from session)
         customerName: session?.user?.name || '',
         customerEmail: session?.user?.email || ''
       }
@@ -137,21 +131,21 @@ export default function CheckoutPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to place order')
+        const errorData: OrderError = await response.json()
+        throw new Error(errorData.message || 'Failed to place order')
       }
 
       const order = await response.json()
-
-      // Clear cart only after successful order
       clearCart()
-
-      // Redirect to order confirmation
       router.push(`/order-confirmation?orderId=${order.id}`)
 
-    } catch (error: any) {
-      console.error('Error placing order:', error)
-      setError(error.message || 'Failed to place order. Please try again.')
+    } catch (orderError) {
+      console.error('Error placing order:', orderError)
+      if (orderError instanceof Error) {
+        setError(orderError.message || 'Failed to place order. Please try again.')
+      } else {
+        setError('Failed to place order. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -164,8 +158,6 @@ export default function CheckoutPage() {
       </div>
     )
   }
-
- 
 
   if (!session) {
     return null
@@ -237,21 +229,19 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => router.back()}
-          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center"
-        >
-          ← Back
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-        <p className="text-gray-600">Review your order and complete your purchase</p>
-      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 hover:text-blue-800 mb-4 flex items-center"
+          >
+            ← Back
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
+          <p className="text-gray-600">Review your order and complete your purchase</p>
+        </div>
 
-      {/* ADD ADMIN NOTICE HERE */}
-      {adminNotice}
+        {adminNotice}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
@@ -305,7 +295,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-300">Self Pickup</span>
+                    <span className="font-medium text-gray-900">Self Pickup</span>
                     <p className="text-sm text-gray-500">Collect from our room (401) - FREE</p>
                   </div>
                   <span className="font-semibold text-green-600">Free</span>
@@ -321,8 +311,8 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-300">Room Delivery</span>
-                    <p className="text-sm text-gray-500">We'll bring it to your room</p>
+                    <span className="font-medium text-gray-900">Room Delivery</span>
+                    <p className="text-sm text-gray-500">We&apos;ll bring it to your room</p>
                   </div>
                   <span className="font-semibold text-blue-600">₹10</span>
                 </label>
@@ -400,7 +390,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-300">UPI Payment</span>
+                    <span className="font-medium text-gray-900">UPI Payment</span>
                     <p className="text-sm text-gray-500">Pay now via UPI - Instant confirmation</p>
                   </div>
                 </label>
@@ -420,7 +410,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-300">Cash Payment</span>
+                    <span className="font-medium text-gray-900">Cash Payment</span>
                     <p className="text-sm text-gray-500">
                       {deliveryMethod === 'DELIVERY' 
                         ? 'Cash payment not available for delivery orders' 
@@ -441,9 +431,11 @@ export default function CheckoutPage() {
                   <div className="text-center mb-4">
                     <div className="bg-white p-6 rounded-xl shadow-sm border inline-block">
                       <div className="mb-3">
-                        <img 
+                        <Image 
                           src="/QRCode.jpg" 
                           alt="UPI QR Code" 
+                          width={192}
+                          height={192}
                           className="w-48 h-48 object-contain rounded-lg mx-auto border border-gray-100" 
                         />
                       </div>
