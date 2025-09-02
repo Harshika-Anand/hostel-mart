@@ -1,9 +1,34 @@
-// File: src/lib/auth.ts (UPDATE existing)
+// File: src/lib/auth.ts (COMPLETE FIX)
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
+import { DefaultSession, DefaultUser } from "next-auth"
+import { DefaultJWT } from "next-auth/jwt"
+
+// Extend NextAuth types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      role: string
+      roomNumber?: string
+    } & DefaultSession["user"]
+  }
+
+  interface User extends DefaultUser {
+    role: string
+    roomNumber?: string
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT extends DefaultJWT {
+    role: string
+    roomNumber?: string
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -43,7 +68,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          roomNumber: user.roomNumber, // Include room number
+          roomNumber: user.roomNumber || undefined, // Convert null to undefined
         }
       }
     })
@@ -61,9 +86,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub
-        session.user.role = token.role
-        session.user.roomNumber = token.roomNumber as string // Include room number in session
+        session.user.id = token.sub as string
+        session.user.role = token.role as string
+        session.user.roomNumber = token.roomNumber as string | undefined // Fix type
       }
       return session
     }
