@@ -139,7 +139,7 @@ export default function CheckoutPage() {
       clearCart()
       router.push(`/order-confirmation?orderId=${order.id}`)
 
-    } catch (orderError) {
+    } catch (orderError: unknown) {
       console.error('Error placing order:', orderError)
       if (orderError instanceof Error) {
         setError(orderError.message || 'Failed to place order. Please try again.')

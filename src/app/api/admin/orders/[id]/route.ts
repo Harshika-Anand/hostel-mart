@@ -4,6 +4,20 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+import { OrderStatus, PaymentStatus, DeliveryMethod } from "@prisma/client"
+
+// Define proper types for order updates
+interface OrderUpdateData {
+  status?: OrderStatus
+  paymentStatus?: PaymentStatus
+  adminNotes?: string
+  deliveryMethod?: DeliveryMethod
+  roomNumber?: string
+  confirmedAt?: Date
+  readyAt?: Date
+  completedAt?: Date
+}
+
 // GET - Fetch specific order details for admin
 export async function GET(
   request: NextRequest,
@@ -81,41 +95,41 @@ export async function PATCH(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    const orderUpdates: any = {}
+    const orderUpdates: OrderUpdateData = {}
 
     // Handle order status updates
     if (updates.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
-      if (!validStatuses.includes(updates.status)) {
+      const validStatuses = Object.values(OrderStatus)
+      if (!validStatuses.includes(updates.status as OrderStatus)) {
         return NextResponse.json({ error: 'Invalid order status' }, { status: 400 })
       }
 
-      orderUpdates.status = updates.status
+      orderUpdates.status = updates.status as OrderStatus
 
       // Set appropriate timestamps
-      if (updates.status === 'CONFIRMED' && !currentOrder.confirmedAt) {
+      if (updates.status === OrderStatus.CONFIRMED && !currentOrder.confirmedAt) {
         orderUpdates.confirmedAt = new Date()
       }
-      if (updates.status === 'READY' && !currentOrder.readyAt) {
+      if (updates.status === OrderStatus.READY && !currentOrder.readyAt) {
         orderUpdates.readyAt = new Date()
       }
-      if (updates.status === 'COMPLETED') {
+      if (updates.status === OrderStatus.COMPLETED) {
         orderUpdates.completedAt = new Date()
       }
     }
 
     // Handle payment status updates
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['PENDING', 'COMPLETED']
-      if (!validPaymentStatuses.includes(updates.paymentStatus)) {
+      const validPaymentStatuses = Object.values(PaymentStatus)
+      if (!validPaymentStatuses.includes(updates.paymentStatus as PaymentStatus)) {
         return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
       }
 
-      orderUpdates.paymentStatus = updates.paymentStatus
+      orderUpdates.paymentStatus = updates.paymentStatus as PaymentStatus
 
       // Auto-confirm order when payment is completed for pending orders
-      if (updates.paymentStatus === 'COMPLETED' && currentOrder.status === 'PENDING') {
-        orderUpdates.status = 'CONFIRMED'
+      if (updates.paymentStatus === PaymentStatus.COMPLETED && currentOrder.status === OrderStatus.PENDING) {
+        orderUpdates.status = OrderStatus.CONFIRMED
         orderUpdates.confirmedAt = new Date()
       }
     }
@@ -189,7 +203,7 @@ export async function DELETE(
     }
 
     // Can't cancel completed orders
-    if (existingOrder.status === 'COMPLETED') {
+    if (existingOrder.status === OrderStatus.COMPLETED) {
       return NextResponse.json({ error: 'Cannot cancel completed orders' }, { status: 400 })
     }
 
@@ -211,7 +225,7 @@ export async function DELETE(
       await tx.order.update({
         where: { id },
         data: {
-          status: 'CANCELLED',
+          status: OrderStatus.CANCELLED,
           completedAt: new Date(),
           adminNotes: existingOrder.adminNotes 
             ? `${existingOrder.adminNotes}\n\nCancelled by admin on ${new Date().toLocaleString()}`

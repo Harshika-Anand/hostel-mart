@@ -77,7 +77,7 @@ export default function SignIn() {
           </button>
           <div className="text-center">
             <Link href="/auth/signup" className="text-blue-600 hover:text-blue-500">
-            Don&apos;t have an account? Sign up
+            No prior account? Sign up
             </Link>
           </div>
         </form>

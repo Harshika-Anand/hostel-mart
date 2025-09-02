@@ -74,7 +74,7 @@ export default function OrderConfirmationPage() {
       }
       const orderData: Order = await response.json()
       setOrder(orderData)
-    } catch (fetchError) {
+    } catch (fetchError: unknown) {
       console.error('Error fetching order:', fetchError)
       if (fetchError instanceof Error) {
         setError(fetchError.message || 'Failed to load order details')

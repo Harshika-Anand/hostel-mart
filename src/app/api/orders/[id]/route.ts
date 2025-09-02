@@ -4,6 +4,26 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+import { OrderStatus, PaymentStatus, DeliveryMethod } from "@prisma/client"
+
+// Define proper type for where clause
+interface OrderWhereClause {
+  id: string
+  userId?: string
+}
+
+// Define proper type for order updates
+interface OrderUpdateData {
+  status?: OrderStatus
+  paymentStatus?: PaymentStatus
+  adminNotes?: string
+  deliveryMethod?: DeliveryMethod
+  roomNumber?: string
+  confirmedAt?: Date
+  readyAt?: Date
+  completedAt?: Date
+}
+
 // GET - Fetch specific order details
 export async function GET(
   request: NextRequest,
@@ -18,7 +38,7 @@ export async function GET(
 
     const { id } = await context.params
 
-    const whereClause: any = { id }
+    const whereClause: OrderWhereClause = { id }
     
     // If customer, only allow access to their own orders
     if (session.user.role === 'CUSTOMER') {
@@ -100,48 +120,48 @@ export async function PATCH(
     }
 
     // Prepare the update object
-    const updateData: any = {}
+    const updateData: OrderUpdateData = {}
 
     // Handle order status transitions - use NEW schema statuses
     if (updates.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
-      if (!validStatuses.includes(updates.status)) {
+      const validStatuses = Object.values(OrderStatus)
+      if (!validStatuses.includes(updates.status as OrderStatus)) {
         return NextResponse.json({ error: 'Invalid order status' }, { status: 400 })
       }
 
-      updateData.status = updates.status
+      updateData.status = updates.status as OrderStatus
 
       // Set appropriate timestamps
-      if (updates.status === 'CONFIRMED' && !currentOrder.confirmedAt) {
+      if (updates.status === OrderStatus.CONFIRMED && !currentOrder.confirmedAt) {
         updateData.confirmedAt = new Date()
       }
-      if (updates.status === 'READY' && !currentOrder.readyAt) {
+      if (updates.status === OrderStatus.READY && !currentOrder.readyAt) {
         updateData.readyAt = new Date()
       }
-      if (updates.status === 'COMPLETED') {
+      if (updates.status === OrderStatus.COMPLETED) {
         updateData.completedAt = new Date()
       }
     }
 
     // Handle payment status updates - use NEW schema statuses
     if (updates.paymentStatus) {
-      const validPaymentStatuses = ['PENDING', 'COMPLETED']
-      if (!validPaymentStatuses.includes(updates.paymentStatus)) {
+      const validPaymentStatuses = Object.values(PaymentStatus)
+      if (!validPaymentStatuses.includes(updates.paymentStatus as PaymentStatus)) {
         return NextResponse.json({ error: 'Invalid payment status' }, { status: 400 })
       }
 
-      updateData.paymentStatus = updates.paymentStatus
+      updateData.paymentStatus = updates.paymentStatus as PaymentStatus
 
       // Auto-confirm order when payment is completed for pending orders
-      if (updates.paymentStatus === 'COMPLETED' && currentOrder.status === 'PENDING') {
-        updateData.status = 'CONFIRMED'
+      if (updates.paymentStatus === PaymentStatus.COMPLETED && currentOrder.status === OrderStatus.PENDING) {
+        updateData.status = OrderStatus.CONFIRMED
         updateData.confirmedAt = new Date()
       }
     }
 
     // Handle other updates
     if (updates.adminNotes !== undefined) updateData.adminNotes = updates.adminNotes
-    if (updates.deliveryMethod) updateData.deliveryMethod = updates.deliveryMethod
+    if (updates.deliveryMethod) updateData.deliveryMethod = updates.deliveryMethod as DeliveryMethod
     if (updates.roomNumber) updateData.roomNumber = updates.roomNumber
 
     const updatedOrder = await prisma.order.update({
@@ -214,7 +234,7 @@ export async function DELETE(
     }
 
     // Check if order can be cancelled - use NEW schema statuses
-    const nonCancellableStatuses = ['COMPLETED', 'CANCELLED']
+    const nonCancellableStatuses = [OrderStatus.COMPLETED, OrderStatus.CANCELLED]
     if (nonCancellableStatuses.includes(order.status)) {
       return NextResponse.json({ 
         error: `Cannot cancel order with status ${order.status}` 
@@ -227,7 +247,7 @@ export async function DELETE(
       const updatedOrder = await tx.order.update({
         where: { id },
         data: {
-          status: 'CANCELLED',
+          status: OrderStatus.CANCELLED,
           completedAt: new Date(),
           adminNotes: session.user.role === 'CUSTOMER' 
             ? (order.adminNotes ? `${order.adminNotes}\n\nCancelled by customer on ${new Date().toLocaleString()}` : `Cancelled by customer on ${new Date().toLocaleString()}`)

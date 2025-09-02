@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get or create shop settings
+    // Get or create shop settings - use correct Prisma model name
     let settings = await prisma.shopSettings.findFirst()
     
     if (!settings) {
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest) {
 
     const { isOpen, message } = await request.json()
 
-    // Get or create shop settings
+    // Get or create shop settings - use correct Prisma model name
     let settings = await prisma.shopSettings.findFirst()
     
     if (!settings) {

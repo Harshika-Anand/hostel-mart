@@ -5,6 +5,23 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { PaymentMethod, DeliveryMethod, OrderStatus, PaymentStatus } from "@prisma/client"
 
+// Define proper type for where clause
+interface OrderWhereClause {
+  userId?: string
+  status?: OrderStatus
+  paymentMethod?: PaymentMethod
+}
+
+// Define proper type for order update data
+interface OrderUpdateData {
+  status?: OrderStatus
+  paymentStatus?: PaymentStatus
+  adminNotes?: string
+  confirmedAt?: Date
+  readyAt?: Date
+  completedAt?: Date
+}
+
 // Helper function to generate order number
 async function generateOrderNumber(): Promise<string> {
   const today = new Date()
@@ -42,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     
-    let whereClause: any = {}
+    const whereClause: OrderWhereClause = {}
     
     // If customer, only show their orders
     if (session.user.role === 'CUSTOMER') {
@@ -314,7 +331,7 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const updateData: any = {}
+    const updateData: OrderUpdateData = {}
     
     if (status) {
       updateData.status = status as OrderStatus

@@ -4,6 +4,14 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+import { OrderStatus, PaymentMethod } from "@prisma/client"
+
+// Define proper type for where clause
+interface OrderWhereClause {
+  status?: OrderStatus
+  paymentMethod?: PaymentMethod
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,21 +24,21 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const paymentMethod = searchParams.get('paymentMethod')
 
-    const whereClause: any = {}
+    const whereClause: OrderWhereClause = {}
     
     // Use NEW schema statuses for filtering
     if (status && status !== 'all') {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'READY', 'COMPLETED', 'CANCELLED']
-      if (validStatuses.includes(status)) {
-        whereClause.status = status
+      const validStatuses = Object.values(OrderStatus)
+      if (validStatuses.includes(status as OrderStatus)) {
+        whereClause.status = status as OrderStatus
       }
     }
     
     // Use NEW payment methods for filtering
     if (paymentMethod && paymentMethod !== 'all') {
-      const validPaymentMethods = ['UPI', 'CASH']
-      if (validPaymentMethods.includes(paymentMethod)) {
-        whereClause.paymentMethod = paymentMethod
+      const validPaymentMethods = Object.values(PaymentMethod)
+      if (validPaymentMethods.includes(paymentMethod as PaymentMethod)) {
+        whereClause.paymentMethod = paymentMethod as PaymentMethod
       }
     }
 
