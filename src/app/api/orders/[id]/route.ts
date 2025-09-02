@@ -234,7 +234,7 @@ export async function DELETE(
     }
 
     // Check if order can be cancelled - use NEW schema statuses
-    const nonCancellableStatuses = [OrderStatus.COMPLETED, OrderStatus.CANCELLED]
+    const nonCancellableStatuses: OrderStatus[] = [OrderStatus.COMPLETED, OrderStatus.CANCELLED]
     if (nonCancellableStatuses.includes(order.status)) {
       return NextResponse.json({ 
         error: `Cannot cancel order with status ${order.status}` 
