@@ -285,10 +285,10 @@ export default function OrderConfirmationPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Order Details</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-4 text-gray-400">
               <div className="flex justify-between">
                 <span className="text-gray-600">Order Number:</span>
-                <span className="font-medium">{order.orderNumber || `#${order.id.slice(-8)}`}</span>
+                <span className="font-medium text-gray-400">{order.orderNumber || `#${order.id.slice(-8)}`}</span>
               </div>
               
               <div className="flex justify-between">
@@ -339,7 +339,7 @@ export default function OrderConfirmationPage() {
             
             <div className="space-y-4">
               {order.orderItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
+                <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0 text-gray-400">
                   <div>
                     <h4 className="font-medium text-gray-900">
                       {item.productName || item.product.name}
@@ -352,7 +352,7 @@ export default function OrderConfirmationPage() {
               ))}
             </div>
 
-            <div className="border-t mt-4 pt-4 space-y-2">
+            <div className="border-t mt-4 pt-4 space-y-2 text-gray-400">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal:</span>
                 <span>₹{order.subtotal}</span>
