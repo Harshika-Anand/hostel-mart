@@ -149,7 +149,7 @@ export default function Shop() {
             </p>
             <div className="text-2xl sm:text-4xl mb-4">😴</div>
             <p className="text-xs sm:text-sm text-gray-500">
-              We'll be back soon with fresh snacks and treats!
+              We will be back soon with fresh snacks and treats!
             </p>
             <button
               onClick={() => router.push('/')}
