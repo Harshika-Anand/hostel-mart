@@ -259,7 +259,7 @@ export default function AdminOrdersPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    return <div className="flex justify-center items-center min-h-screen text-gray-400 text-lg">Loading...</div>
   }
 
   return (
@@ -274,7 +274,7 @@ export default function AdminOrdersPage() {
               >
                 ← Back to Products
               </button>
-              <h1 className="text-xl font-semibold">📦 Order Management</h1>
+              <h1 className="text-xl font-semibold text-gray-400">📦 Order Management</h1>
             </div>
           </div>
         </div>
@@ -291,7 +291,7 @@ export default function AdminOrdersPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-400"
                 >
                   <option value="all">All Statuses</option>
                   <option value="PENDING">Pending</option>
@@ -307,7 +307,7 @@ export default function AdminOrdersPage() {
                 <select
                   value={paymentFilter}
                   onChange={(e) => setPaymentFilter(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-400"
                 >
                   <option value="all">All Methods</option>
                   <option value="UPI">UPI Payment</option>
@@ -473,7 +473,7 @@ function OrderDetails({
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           Order #{order.orderNumber || order.id.slice(-8)}
         </h3>
-        <div className="space-y-2">
+        <div className="space-y-2 text-gray-400">
           <p><strong>Customer:</strong> {order.customerName || order.user.name}</p>
           <p><strong>Email:</strong> {order.customerEmail || order.user.email}</p>
           {order.user.phone && <p><strong>Phone:</strong> {order.user.phone}</p>}
@@ -492,7 +492,7 @@ function OrderDetails({
       </div>
 
       {/* Current Status */}
-      <div className="p-6 border-b">
+      <div className="p-6 border-b text-gray-500">
         <h4 className="font-semibold text-gray-900 mb-4">Current Status</h4>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -535,7 +535,7 @@ function OrderDetails({
       {/* Order Items */}
       <div className="p-6 border-b">
         <h4 className="font-semibold text-gray-900 mb-4">Items to Pack</h4>
-        <div className="space-y-3">
+        <div className="space-y-3 text-gray-400">
           {order.orderItems.map((item, index) => (
             <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded">
               <div className="flex-1">
@@ -552,7 +552,7 @@ function OrderDetails({
           ))}
         </div>
         
-        <div className="border-t mt-4 pt-4 space-y-1">
+        <div className="border-t mt-4 pt-4 space-y-1 text-gray-500">
           <div className="flex justify-between">
             <span>Subtotal:</span>
             <span>₹{order.subtotal}</span>
@@ -641,7 +641,7 @@ function OrderDetails({
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
             placeholder="Add internal notes or customer messages..."
           />
           <button

@@ -366,18 +366,18 @@ export default function OrdersPage() {
 
                     {/* Order Summary */}
                     <div className="border-t border-gray-200 mt-4 pt-4">
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1 text-sm text-gray-300">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Subtotal:</span>
                           <span>₹{order.subtotal}</span>
                         </div>
                         {order.deliveryFee > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex justify-between text-gray-300">
                             <span className="text-gray-600">Delivery Fee:</span>
                             <span>₹{order.deliveryFee}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-semibold text-base">
+                        <div className="flex justify-between font-semibold text-base text-gray-300">
                           <span>Total:</span>
                           <span>₹{order.totalAmount}</span>
                         </div>

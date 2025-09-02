@@ -10,6 +10,11 @@ import { useCart } from '@/contexts/CartContext'
 type PaymentMethod = 'UPI' | 'CASH'
 type DeliveryMethod = 'PICKUP' | 'DELIVERY'
 
+interface ShopSettings {
+  isOpen: boolean
+  message?: string
+}
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -21,6 +26,9 @@ export default function CheckoutPage() {
   const [paymentPin, setPaymentPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // ADD THESE STATE VARIABLES
+  const [shopSettings, setShopSettings] = useState<ShopSettings>({ isOpen: false })
+  const [shopLoading, setShopLoading] = useState(true)
 
   // Auto-switch to UPI if delivery is selected and cash was chosen
   useEffect(() => {
@@ -35,6 +43,29 @@ export default function CheckoutPage() {
       router.push('/auth/signin')
     }
   }, [status, router])
+
+  useEffect(() => {
+    if (status === 'loading') return
+    if (!session) return
+    
+    const fetchShopStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/shop-settings')
+        if (response.ok) {
+          const data = await response.json()
+          setShopSettings(data)
+        }
+      } catch (error) {
+        console.error('Error fetching shop status:', error)
+        // Default to closed if can't fetch
+        setShopSettings({ isOpen: false })
+      } finally {
+        setShopLoading(false)
+      }
+    }
+    
+    fetchShopStatus()
+  }, [session, status])
 
   const cartTotal = getCartTotal()
   const deliveryFee = deliveryMethod === 'DELIVERY' ? 10 : 0
@@ -126,13 +157,65 @@ export default function CheckoutPage() {
     }
   }
 
-  if (status === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (status === 'loading' || shopLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
+
+ 
 
   if (!session) {
     return null
   }
+
+  if (!shopSettings.isOpen && session.user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="text-6xl mb-4">🏪</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Shop is Closed</h1>
+            <p className="text-gray-600 mb-6">
+              {shopSettings.message || 'Sorry, we are currently closed. You cannot place orders at this time.'}
+            </p>
+            <div className="text-4xl mb-4">😴</div>
+            <p className="text-sm text-gray-500 mb-6">
+              Please check back when the shop reopens!
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/shop')}
+                className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Back to Shop
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="w-full bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const adminNotice = !shopSettings.isOpen && session.user.role === 'ADMIN' && (
+    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+      <div className="flex items-center">
+        <div className="text-orange-500 mr-2">⚠️</div>
+        <div>
+          <p className="text-orange-800 font-medium">Shop is currently closed</p>
+          <p className="text-orange-700 text-sm">You can still place orders as an admin, but regular customers cannot access checkout.</p>
+        </div>
+      </div>
+    </div>
+  )
 
   if (cart.length === 0) {
     return (
@@ -154,12 +237,21 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-          <p className="text-gray-600">Review your order and complete your purchase</p>
-        </div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <button
+          onClick={() => router.back()}
+          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center"
+        >
+          ← Back
+        </button>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
+        <p className="text-gray-600">Review your order and complete your purchase</p>
+      </div>
+
+      {/* ADD ADMIN NOTICE HERE */}
+      {adminNotice}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
@@ -213,7 +305,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">Self Pickup</span>
+                    <span className="font-medium text-gray-300">Self Pickup</span>
                     <p className="text-sm text-gray-500">Collect from our room (401) - FREE</p>
                   </div>
                   <span className="font-semibold text-green-600">Free</span>
@@ -229,7 +321,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">Room Delivery</span>
+                    <span className="font-medium text-gray-300">Room Delivery</span>
                     <p className="text-sm text-gray-500">We'll bring it to your room</p>
                   </div>
                   <span className="font-semibold text-blue-600">₹10</span>
@@ -267,7 +359,7 @@ export default function CheckoutPage() {
                             value={customRoomNumber}
                             onChange={(e) => setCustomRoomNumber(e.target.value)}
                             placeholder="e.g., A-101, B-205"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                           />
                         </div>
                       )}
@@ -282,7 +374,7 @@ export default function CheckoutPage() {
                         value={customRoomNumber}
                         onChange={(e) => setCustomRoomNumber(e.target.value)}
                         placeholder="e.g., A-101, B-205"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         You can update your room number in your profile to avoid entering it each time.
@@ -308,7 +400,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">UPI Payment</span>
+                    <span className="font-medium text-gray-300">UPI Payment</span>
                     <p className="text-sm text-gray-500">Pay now via UPI - Instant confirmation</p>
                   </div>
                 </label>
@@ -328,7 +420,7 @@ export default function CheckoutPage() {
                     className="mr-3"
                   />
                   <div className="flex-1">
-                    <span className="font-medium">Cash Payment</span>
+                    <span className="font-medium text-gray-300">Cash Payment</span>
                     <p className="text-sm text-gray-500">
                       {deliveryMethod === 'DELIVERY' 
                         ? 'Cash payment not available for delivery orders' 
@@ -375,7 +467,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setPaymentPin(e.target.value.slice(0, 4))}
                       placeholder="e.g., 1234"
                       maxLength={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Find this in your payment app after successful payment

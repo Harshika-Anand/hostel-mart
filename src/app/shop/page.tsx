@@ -1,4 +1,3 @@
-// File: src/app/shop/page.tsx (REPLACE existing)
 'use client'
 
 import { useSession } from 'next-auth/react'
@@ -24,16 +23,22 @@ interface Category {
   name: string
 }
 
+interface ShopSettings {
+  isOpen: boolean
+  message?: string
+}
+
 export default function Shop() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [shopSettings, setShopSettings] = useState<ShopSettings>({ isOpen: false })
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
 
-  // Use the CartContext instead of local state
+  // Use the CartContext
   const {
     cart,
     addToCart: addToCartContext,
@@ -56,23 +61,26 @@ export default function Shop() {
   const fetchData = async () => {
     try {
       setError('')
-      const [productsRes, categoriesRes] = await Promise.all([
+      const [productsRes, categoriesRes, shopRes] = await Promise.all([
         fetch('/api/shop/products'),
-        fetch('/api/shop/categories')
+        fetch('/api/shop/categories'),
+        fetch('/api/admin/shop-settings')
       ])
       
-      if (!productsRes.ok || !categoriesRes.ok) {
+      if (!productsRes.ok || !categoriesRes.ok || !shopRes.ok) {
         throw new Error('Failed to fetch data')
       }
 
       const productsData = await productsRes.json()
       const categoriesData = await categoriesRes.json()
+      const shopData = await shopRes.json()
       
       setProducts(productsData)
       setCategories(categoriesData)
+      setShopSettings(shopData)
     } catch (error) {
       console.error('Error fetching data:', error)
-      setError('Failed to load products. Please try again.')
+      setError('Failed to load shop data. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -82,7 +90,6 @@ export default function Shop() {
     ? products.filter(p => p.isAvailable && p.stockQuantity > 0)
     : products.filter(p => p.isAvailable && p.stockQuantity > 0 && p.category.id === selectedCategory)
 
-  // Updated to use CartContext method
   const addToCart = (product: Product) => {
     addToCartContext({
       productId: product.id,
@@ -93,7 +100,6 @@ export default function Shop() {
     })
   }
 
-  // Updated to use CartContext method
   const updateCartQuantity = (productId: string, quantity: number) => {
     updateQuantity(productId, quantity)
   }
@@ -129,13 +135,61 @@ export default function Shop() {
     )
   }
 
+  // Show shop closed message if not open (except for admins)
+  if (!shopSettings.isOpen && session.user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="text-6xl mb-4">🏪</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Shop is Closed</h1>
+            <p className="text-gray-600 mb-6">
+              {shopSettings.message || 'Sorry, we are currently closed. Please check back later!'}
+            </p>
+            <div className="text-4xl mb-4">😴</div>
+            <p className="text-sm text-gray-500">
+              We'll be back soon with fresh snacks and treats!
+            </p>
+            <button
+              onClick={() => router.push('/')}
+              className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Go Back Home
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop</h1>
-          <p className="text-gray-600">Browse our collection of snacks and treats</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop</h1>
+              <p className="text-gray-600">Browse our collection of snacks and treats</p>
+            </div>
+            
+            {/* Show shop status for admin */}
+            {session.user.role === 'ADMIN' && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Shop Status:</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  shopSettings.isOpen
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+                </span>
+                {!shopSettings.isOpen && (
+                  <span className="text-xs text-gray-500">(Admin can still browse)</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -150,7 +204,7 @@ export default function Shop() {
                   className={`w-full text-left px-3 py-2 rounded transition ${
                     selectedCategory === 'all'
                       ? 'bg-blue-100 text-blue-900 font-medium'
-                      : 'hover:bg-gray-100'
+                      : 'hover:bg-gray-100 text-gray-400'
                   }`}
                 >
                   All Items ({products.filter(p => p.isAvailable && p.stockQuantity > 0).length})
@@ -166,7 +220,7 @@ export default function Shop() {
                       className={`w-full text-left px-3 py-2 rounded transition ${
                         selectedCategory === category.id
                           ? 'bg-blue-100 text-blue-900 font-medium'
-                          : 'hover:bg-gray-100'
+                          : 'hover:bg-gray-100 text-gray-400'
                       }`}
                     >
                       {category.name} ({categoryProductCount})
@@ -232,6 +286,14 @@ export default function Shop() {
               <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">🛒</div>
                 <p className="text-gray-500 text-lg">No products available in this category</p>
+                {selectedCategory !== 'all' && (
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    View All Products
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -241,6 +303,21 @@ export default function Shop() {
 
                   return (
                     <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-md transition">
+                      {/* Product Image */}
+                      {product.imageUrl && (
+                        <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-t-lg overflow-hidden">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="text-lg font-semibold text-gray-900 flex-1">{product.name}</h3>
@@ -261,17 +338,17 @@ export default function Shop() {
                             <div className="flex items-center space-x-3">
                               <button
                                 onClick={() => updateCartQuantity(product.id, cartItem.quantity - 1)}
-                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition"
+                                className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 flex items-center justify-center transition"
                               >
                                 -
                               </button>
-                              <span className="font-semibold text-lg w-8 text-center">
+                              <span className="font-semibold text-lg w-8 text-center text-gray-500">
                                 {cartItem.quantity}
                               </span>
                               <button
                                 onClick={() => updateCartQuantity(product.id, cartItem.quantity + 1)}
                                 disabled={!canAddMore}
-                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 hover:bg-gray-300 flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 +
                               </button>
