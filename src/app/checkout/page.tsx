@@ -71,7 +71,7 @@ export default function CheckoutPage() {
   }, [session, status])
 
   const cartTotal = getCartTotal()
-  const deliveryFee = deliveryMethod === 'DELIVERY' ? 10 : 0
+  const deliveryFee = deliveryMethod === 'DELIVERY' ? 20 : 0
   const finalTotal = cartTotal + deliveryFee
 
   const getRoomNumber = () => {
@@ -314,7 +314,7 @@ export default function CheckoutPage() {
                     <span className="font-medium text-gray-900">Room Delivery</span>
                     <p className="text-sm text-gray-500">We&apos;ll bring it to your room</p>
                   </div>
-                  <span className="font-semibold text-blue-600">₹10</span>
+                  <span className="font-semibold text-blue-600">₹20</span>
                 </label>
               </div>
 
