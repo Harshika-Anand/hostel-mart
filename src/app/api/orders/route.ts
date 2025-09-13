@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Price mismatch detected' }, { status: 400 })
     }
 
-    const expectedDeliveryFee = deliveryMethod === 'DELIVERY' ? 10 : 0
+    const expectedDeliveryFee = deliveryMethod === 'DELIVERY' ? 20 : 0
     if (deliveryFee !== expectedDeliveryFee) {
       return NextResponse.json({ error: 'Delivery fee mismatch' }, { status: 400 })
     }
