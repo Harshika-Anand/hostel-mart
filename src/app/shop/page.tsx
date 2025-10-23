@@ -209,7 +209,7 @@ export default function Shop() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Page Header */}
-        <div className="mb-6">
+        <div className="mb-6 bg-white rounded-lg shadow border p-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Shop</h1>
