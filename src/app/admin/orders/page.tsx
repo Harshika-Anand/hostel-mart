@@ -4,6 +4,7 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import bgimg from '../../bgimg.jpg'
 
 interface OrderItem {
   id: string
@@ -263,7 +264,12 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen " 
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }} >
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">

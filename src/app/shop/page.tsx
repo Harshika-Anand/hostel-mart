@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import bgimg from '../bgimg.jpg'
 
 interface Product {
   id: string
@@ -171,7 +172,12 @@ export default function Shop() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50"
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Clear Cart Confirmation Modal */}
       {showClearCartConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -500,6 +506,7 @@ export default function Shop() {
                     </div>
                   )
                 })}
+
               </div>
             )}
           </div>

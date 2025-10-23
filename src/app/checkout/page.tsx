@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import Image from 'next/image'
+import bgimg from '../bgimg.jpg'
 
 // Types matching your Prisma schema
 type PaymentMethod = 'UPI' | 'CASH'
@@ -165,7 +166,12 @@ export default function CheckoutPage() {
 
   if (!shopSettings.isOpen && session.user.role !== 'ADMIN') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" 
+      style={{
+        backgroundImage: `url(${bgimg.src})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed'
+      }}>
         <div className="max-w-md mx-auto text-center">
           <div className="bg-white rounded-lg shadow-lg p-8">
             <div className="text-6xl mb-4">🏪</div>
@@ -228,8 +234,14 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50"
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-lg shadow p-6 m-4">
         <div className="mb-8">
           <button
             onClick={() => router.back()}
@@ -239,6 +251,7 @@ export default function CheckoutPage() {
           </button>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
           <p className="text-gray-600">Review your order and complete your purchase</p>
+        </div>
         </div>
 
         {adminNotice}

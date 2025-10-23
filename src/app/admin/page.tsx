@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import bgimg from '../bgimg.jpg'
 
 interface Product {
   id: string
@@ -221,9 +222,16 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen " 
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }} >
+      
+
       {/* Mobile-First Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="relative z-10 bg-white shadow-sm border-b">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo/Title */}
@@ -319,7 +327,7 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <main className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
+      <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
         
         {/* Quick Stats - Mobile Responsive Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
@@ -381,7 +389,7 @@ export default function AdminDashboard() {
         </div>
         
         {/* Header with Actions - Mobile Responsive */}
-        <div className="mb-6">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6 m-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div className="min-w-0 flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Product Management</h2>

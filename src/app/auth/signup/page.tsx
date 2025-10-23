@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import bgimg from '../../bgimg.jpg'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -56,7 +57,13 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50"
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}>
+      <div className='min-h-screen rounded-lg shadow p-6 mb-6 z-10 bg-gray-50'>
       <div className="max-w-md w-full space-y-8 p-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -135,6 +142,7 @@ export default function SignUp() {
             </Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   )

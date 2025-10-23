@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import bgimg from '../bgimg.jpg'
 
 interface OrderItem {
   id: string
@@ -157,13 +158,13 @@ export default function OrdersPage() {
         case 'pending':
           return {
             title: 'Payment Under Review',
-            message: 'Your UPI payment is being verified. This usually takes a few minutes.',
+            message: 'Your UPI payment is being verified. Refresh to view order status.',
             icon: '⏳'
           }
         case 'confirmed':
           return {
             title: 'Order Confirmed!',
-            message: 'Your payment has been verified. Your order is being prepared.',
+            message: 'Your payment has been verified. Your order is being packed.',
             icon: '✅'
           }
         case 'out_for_delivery':
@@ -191,19 +192,19 @@ export default function OrdersPage() {
         case 'pending':
           return {
             title: 'Order Under Review',
-            message: 'Your cash-on-delivery order is being processed.',
+            message: 'Head to room 401 for cash/UPI payment and order confirmation.',
             icon: '⏳'
           }
         case 'confirmed':
           return {
             title: 'Order Confirmed!',
-            message: 'Your order is confirmed and being prepared.',
+            message: 'Your order is confirmed and being packed.',
             icon: '✅'
           }
         case 'out_for_delivery':
           return {
             title: 'Out for Delivery',
-            message: `Your order is on the way. Pay ₹${order.totalAmount} in cash upon delivery.`,
+            message: `Your order is on the way. Pay ₹${order.totalAmount} in cash/UPI upon delivery.`,
             icon: '🚚'
           }
         case 'completed':
@@ -235,7 +236,12 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50"
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Header */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

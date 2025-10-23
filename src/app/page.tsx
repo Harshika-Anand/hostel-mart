@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import bgimg from './bgimg.jpg'
 
 interface AdminStats {
   todayOrders: number
@@ -21,7 +22,8 @@ export default function Home() {
 
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50"
+      >
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">🍕 Hostel Mart</h1>
           <p className="text-gray-600 mb-8">Late night snack delivery for your hostel</p>
@@ -45,9 +47,16 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen " 
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }} >
+      
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto py-12 px-6">
+    
+      <main className="relative max-w-4xl mx-auto py-12 px-6 bg-cover bg-center rounded-xl shadow-lg overflow-hidden">
         <div className="text-center space-y-8">
           {/* Welcome Section */}
           <div className="bg-white rounded-xl shadow-lg p-8">
@@ -130,6 +139,7 @@ export default function Home() {
           )}
         </div>
       </main>
+      
     </div>
   )
 }

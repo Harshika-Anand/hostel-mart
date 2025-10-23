@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import bgimg from '../bgimg.jpg'
 
 interface OrderItem {
   id: string
@@ -179,7 +180,7 @@ export default function OrderConfirmationPage() {
         case 'pending':
           return {
             title: 'Payment Under Review',
-            message: 'Your UPI payment is being verified. You&apos;ll be notified once confirmed. This usually takes a few minutes.',
+            message: 'Your UPI payment is being verified. Refresh to view order status.',
             icon: '⏳'
           }
         case 'confirmed':
@@ -192,7 +193,7 @@ export default function OrderConfirmationPage() {
           return {
             title: order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!',
             message: order.deliveryMethod === 'PICKUP' 
-              ? 'Your snacks are packed and ready for pickup!' 
+              ? 'Your snacks are packed and ready for pickup from Room 401!' 
               : `Your snacks are packed and ready for delivery to room ${order.roomNumber}.`,
             icon: '📦'
           }
@@ -217,7 +218,7 @@ export default function OrderConfirmationPage() {
         case 'pending':
           return {
             title: 'Order Under Review',
-            message: 'Your cash payment order is being processed. Stock is being reserved for you.',
+            message: 'Head to room 401 for cash/UPI payment and order confirmation.',
             icon: '⏳'
           }
         case 'confirmed':
@@ -230,7 +231,7 @@ export default function OrderConfirmationPage() {
           return {
             title: order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!',
             message: order.deliveryMethod === 'PICKUP'
-              ? `Your snacks are ready! Come with ₹${order.totalAmount} in cash to collect them.`
+              ? `Your snacks are ready! Come with ₹${order.totalAmount} in cash/UPI to collect them.`
               : `Your snacks are ready for delivery to room ${order.roomNumber}. Have ₹${order.totalAmount} ready.`,
             icon: '📦'
           }
@@ -253,7 +254,12 @@ export default function OrderConfirmationPage() {
   const statusInfo = getStatusMessage()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50"
+    style={{
+      backgroundImage: `url(${bgimg.src})`,
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Header */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
