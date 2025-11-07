@@ -76,6 +76,16 @@ export default function Navigation() {
     >
       My Orders
     </Link>
+    <Link
+      href="/my-listings"
+      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+        isActive('/my-listings')
+          ? 'text-green-600 bg-green-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      My Listings
+    </Link>
     {/* 👇 ADD THIS NEW LINK */}
     <Link
       href="/sell-rent"
@@ -237,6 +247,17 @@ export default function Navigation() {
                   >
                     📋 My Orders
                   </Link>
+                  <Link
+      href="/my-listings"
+      onClick={closeMobileMenu}
+      className={`block px-3 py-2 rounded-md text-base font-medium ${
+        isActive('/my-listings')
+          ? 'text-green-600 bg-green-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      📋 My Listings
+    </Link>
                   <Link
       href="/sell-rent"
       onClick={closeMobileMenu}

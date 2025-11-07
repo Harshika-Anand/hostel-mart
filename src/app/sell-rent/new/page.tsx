@@ -308,9 +308,9 @@ export default function NewListingPage() {
           <h4 className="font-semibold text-yellow-900 mb-2">📋 What Happens Next?</h4>
           <ul className="text-sm text-yellow-800 space-y-1">
             <li>• Your listing will be reviewed by the admin</li>
-            <li>• You'll be notified once it's approved</li>
+            <li>• You will be notified once it is approved</li>
             <li>• Approved items will appear in the shop</li>
-            <li>• When someone rents, you'll receive their contact details</li>
+            <li>• When someone rents, you will receive their contact details</li>
           </ul>
         </div>
       </div>

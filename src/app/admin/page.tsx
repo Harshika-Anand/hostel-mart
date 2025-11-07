@@ -65,11 +65,11 @@ export default function AdminDashboard() {
         fetch('/api/admin/categories'),
         fetch('/api/admin/shop-settings')
       ])
-      
+
       const productsData = await productsRes.json()
       const categoriesData = await categoriesRes.json()
       const shopData = await shopRes.json()
-      
+
       setProducts(productsData)
       setCategories(categoriesData)
       setShopSettings(shopData)
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isOpen: !shopSettings.isOpen })
       })
-      
+
       if (response.ok) {
         const updated = await response.json()
         setShopSettings(updated)
@@ -112,9 +112,9 @@ export default function AdminDashboard() {
   const updateStock = async (productId: string, change: number) => {
     const product = products.find(p => p.id === productId)
     if (!product) return
-    
+
     const newStock = Math.max(0, product.stockQuantity + change)
-    
+
     try {
       await fetch(`/api/admin/products/${productId}`, {
         method: 'PATCH',
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategory.trim()) return
-    
+
     try {
       await fetch('/api/admin/categories', {
         method: 'POST',
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   const handleEditProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingProduct) return
-    
+
     try {
       await fetch(`/api/admin/products/${editingProduct.id}`, {
         method: 'PATCH',
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
 
   const deleteProduct = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return
-    
+
     try {
       await fetch(`/api/admin/products/${productId}`, {
         method: 'DELETE'
@@ -222,13 +222,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen " 
-    style={{
-      backgroundImage: `url(${bgimg.src})`,
-      backgroundSize: 'cover',
-      backgroundAttachment: 'fixed'
-    }} >
-      
+    <div className="min-h-screen "
+      style={{
+        backgroundImage: `url(${bgimg.src})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed'
+      }} >
+
 
       {/* Mobile-First Navigation */}
       <nav className="relative z-10 bg-white shadow-sm border-b">
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
                 <span className="sm:hidden">🏪 Admin</span>
               </h1>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               {/* Shop Status Toggle */}
@@ -249,16 +249,22 @@ export default function AdminDashboard() {
                 <span className="text-sm text-gray-600">Shop Status:</span>
                 <button
                   onClick={toggleShopStatus}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                    shopSettings.isOpen
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${shopSettings.isOpen
                       ? 'bg-green-100 text-green-800 hover:bg-green-200'
                       : 'bg-red-100 text-red-800 hover:bg-red-200'
-                  }`}
+                    }`}
                 >
                   {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
                 </button>
               </div>
-              
+
+              <button
+                onClick={() => router.push('/admin/listing-requests')}
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+              >
+                🏷️ Listing Requests
+              </button>
+
               <button
                 onClick={() => router.push('/admin/orders')}
                 className="text-blue-600 hover:text-blue-800 font-medium text-sm"
@@ -292,16 +298,15 @@ export default function AdminDashboard() {
                 <span className="text-sm text-gray-600">Shop Status:</span>
                 <button
                   onClick={toggleShopStatus}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                    shopSettings.isOpen
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${shopSettings.isOpen
                       ? 'bg-green-100 text-green-800 hover:bg-green-200'
                       : 'bg-red-100 text-red-800 hover:bg-red-200'
-                  }`}
+                    }`}
                 >
                   {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
                 </button>
               </div>
-              
+
               <div className="flex flex-col space-y-2">
                 <button
                   onClick={() => {
@@ -328,7 +333,7 @@ export default function AdminDashboard() {
       </nav>
 
       <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
-        
+
         {/* Quick Stats - Mobile Responsive Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6">
@@ -344,7 +349,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -358,7 +363,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -372,7 +377,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -387,7 +392,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-        
+
         {/* Header with Actions - Mobile Responsive */}
         <div className="bg-white rounded-lg shadow p-3 sm:p-4 lg:p-6 m-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
@@ -420,19 +425,18 @@ export default function AdminDashboard() {
             <div className="min-w-0 flex-1">
               <h3 className="text-lg font-semibold text-gray-900">Shop Status</h3>
               <p className="text-gray-600 mt-1 text-sm">
-                {shopSettings.isOpen 
-                  ? 'Customers can browse and place orders' 
+                {shopSettings.isOpen
+                  ? 'Customers can browse and place orders'
                   : 'Shop is closed - customers will see a closed message'
                 }
               </p>
             </div>
             <button
               onClick={toggleShopStatus}
-              className={`px-4 py-3 sm:px-6 sm:py-3 rounded-lg font-medium text-white transition text-sm w-full sm:w-auto ${
-                shopSettings.isOpen
+              className={`px-4 py-3 sm:px-6 sm:py-3 rounded-lg font-medium text-white transition text-sm w-full sm:w-auto ${shopSettings.isOpen
                   ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-green-600 hover:bg-green-700'
-              }`}
+                }`}
             >
               {shopSettings.isOpen ? 'Close Shop' : 'Open Shop'}
             </button>
@@ -446,7 +450,7 @@ export default function AdminDashboard() {
               Products ({products.length})
             </h3>
           </div>
-          
+
           {/* Mobile Card View */}
           <div className="sm:hidden">
             {products.length === 0 ? (
@@ -466,7 +470,7 @@ export default function AdminDashboard() {
                         {product.category.name}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
                       <div className="flex items-center space-x-2">
@@ -477,9 +481,8 @@ export default function AdminDashboard() {
                         >
                           -
                         </button>
-                        <span className={`font-medium min-w-[2rem] text-center text-sm ${
-                          product.stockQuantity < 5 ? 'text-red-600' : 'text-gray-900'
-                        }`}>
+                        <span className={`font-medium min-w-[2rem] text-center text-sm ${product.stockQuantity < 5 ? 'text-red-600' : 'text-gray-900'
+                          }`}>
                           {product.stockQuantity}
                         </span>
                         <button
@@ -490,19 +493,18 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     </div>
-                    
+
                     {product.stockQuantity < 3 && (
                       <div className="text-xs text-red-600 mb-3 font-medium">⚠️ Low stock!</div>
                     )}
-                    
+
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          product.isAvailable
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${product.isAvailable
                             ? 'bg-green-100 text-green-800 hover:bg-green-200'
                             : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
+                          }`}
                       >
                         {product.isAvailable ? 'Available' : 'Unavailable'}
                       </button>
@@ -578,9 +580,8 @@ export default function AdminDashboard() {
                         >
                           -
                         </button>
-                        <span className={`font-medium min-w-[2rem] text-center ${
-                          product.stockQuantity < 5 ? 'text-red-600' : 'text-gray-900'
-                        }`}>
+                        <span className={`font-medium min-w-[2rem] text-center ${product.stockQuantity < 5 ? 'text-red-600' : 'text-gray-900'
+                          }`}>
                           {product.stockQuantity}
                         </span>
                         <button
@@ -597,11 +598,10 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          product.isAvailable
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${product.isAvailable
                             ? 'bg-green-100 text-green-800 hover:bg-green-200'
                             : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
+                          }`}
                       >
                         {product.isAvailable ? 'Available' : 'Unavailable'}
                       </button>
@@ -626,7 +626,7 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
-            
+
             {products.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-gray-500">No products yet. Add some products to get started!</p>
@@ -648,7 +648,7 @@ export default function AdminDashboard() {
                     type="text"
                     placeholder="Product Name"
                     value={newProduct.name}
-                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                     required
                   />
@@ -657,13 +657,13 @@ export default function AdminDashboard() {
                     step="0.01"
                     placeholder="Price (₹)"
                     value={newProduct.price}
-                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                     required
                   />
                   <select
                     value={newProduct.categoryId}
-                    onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}
+                    onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     required
                   >
@@ -678,7 +678,7 @@ export default function AdminDashboard() {
                     type="number"
                     placeholder="Stock Quantity"
                     value={newProduct.stockQuantity}
-                    onChange={(e) => setNewProduct({...newProduct, stockQuantity: e.target.value})}
+                    onChange={(e) => setNewProduct({ ...newProduct, stockQuantity: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                     required
                   />
@@ -686,7 +686,7 @@ export default function AdminDashboard() {
                     type="url"
                     placeholder="Image URL (optional)"
                     value={newProduct.imageUrl}
-                    onChange={(e) => setNewProduct({...newProduct, imageUrl: e.target.value})}
+                    onChange={(e) => setNewProduct({ ...newProduct, imageUrl: e.target.value })}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
                   />
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">

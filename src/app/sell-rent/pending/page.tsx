@@ -18,12 +18,12 @@ export default function PendingListingPage() {
           </p>
           
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">What is Next?</h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>✓ Admin will review your listing</li>
-              <li>✓ You'll be notified of approval/rejection</li>
+              <li>✓ You will be notified of approval/rejection</li>
               <li>✓ Once approved, it will appear in the shop</li>
-              <li>✓ You'll get contacted when someone wants to rent</li>
+              <li>✓ You will get contacted when someone wants to rent</li>
             </ul>
           </div>
 
