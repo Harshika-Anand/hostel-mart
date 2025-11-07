@@ -6,6 +6,14 @@ export async function POST(request: NextRequest) {
   try {
     const { name, email, password, phone, roomNumber } = await request.json()
 
+    // CRITICAL: Validate email domain
+    if (!email.endsWith('@thapar.edu')) {
+      return NextResponse.json(
+        { error: "Only @thapar.edu email addresses are allowed" },
+        { status: 400 }
+      )
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -29,7 +37,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         phone,
         roomNumber,
-        role: email === "hanand_be23@thapar.edu" ? "ADMIN" : "CUSTOMER" // Replace with your email
+        role: email === "hanand_be23@thapar.edu" ? "ADMIN" : "CUSTOMER"
       }
     })
 

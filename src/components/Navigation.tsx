@@ -55,29 +55,40 @@ export default function Navigation() {
             
             {/* Desktop Navigation */}
             {session.user.role === 'CUSTOMER' && (
-              <div className="hidden md:flex space-x-6">
-                <Link
-                  href="/shop"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                    isActive('/shop')
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  Shop
-                </Link>
-                <Link
-                  href="/orders"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                    isActive('/orders')
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  My Orders
-                </Link>
-              </div>
-            )}
+  <div className="hidden md:flex space-x-6">
+    <Link
+      href="/shop"
+      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+        isActive('/shop')
+          ? 'text-blue-600 bg-blue-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      Shop
+    </Link>
+    <Link
+      href="/orders"
+      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+        isActive('/orders')
+          ? 'text-blue-600 bg-blue-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      My Orders
+    </Link>
+    {/* 👇 ADD THIS NEW LINK */}
+    <Link
+      href="/sell-rent"
+      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+        isActive('/sell-rent')
+          ? 'text-green-600 bg-green-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      🏷️ Rent Your Items
+    </Link>
+  </div>
+)}
 
             {session.user.role === 'ADMIN' && (
               <div className="hidden md:flex space-x-6">
@@ -226,6 +237,17 @@ export default function Navigation() {
                   >
                     📋 My Orders
                   </Link>
+                  <Link
+      href="/sell-rent"
+      onClick={closeMobileMenu}
+      className={`block px-3 py-2 rounded-md text-base font-medium ${
+        isActive('/sell-rent')
+          ? 'text-green-600 bg-green-50'
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+      }`}
+    >
+      🏷️ Rent Your Items
+    </Link>
                   
                   {/* Mobile cart info */}
                   {cartCount > 0 && (

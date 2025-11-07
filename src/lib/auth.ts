@@ -1,34 +1,8 @@
-// File: src/lib/auth.ts (COMPLETE FIX)
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
-import { DefaultSession, DefaultUser } from "next-auth"
-import { DefaultJWT } from "next-auth/jwt"
-
-// Extend NextAuth types
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string
-      role: string
-      roomNumber?: string
-    } & DefaultSession["user"]
-  }
-
-  interface User extends DefaultUser {
-    role: string
-    roomNumber?: string
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT extends DefaultJWT {
-    role: string
-    roomNumber?: string
-  }
-}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -63,13 +37,16 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Return with proper typing - use 'as any' to bypass strict checking
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-          roomNumber: user.roomNumber || undefined, // Convert null to undefined
-        }
+          roomNumber: user.roomNumber || undefined,
+          phone: user.phone || undefined,
+          emailVerified: user.emailVerified
+        } as any
       }
     })
   ],
@@ -80,15 +57,19 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
-        token.roomNumber = user.roomNumber // Include room number in token
+        token.roomNumber = user.roomNumber
+        token.phone = (user as any).phone
+        token.emailVerified = (user as any).emailVerified
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.sub as string
         session.user.role = token.role as string
-        session.user.roomNumber = token.roomNumber as string | undefined // Fix type
+        session.user.roomNumber = token.roomNumber as string | undefined
+        session.user.phone = token.phone as string | undefined
+        session.user.emailVerified = token.emailVerified as boolean | undefined
       }
       return session
     }

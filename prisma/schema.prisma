@@ -15,11 +15,69 @@ model User {
   roomNumber String?  @map("room_number")
   role       Role     @default(CUSTOMER)
   password   String
+  emailVerified Boolean  @default(false) @map("email_verified")
+  canListItems  Boolean  @default(true) @map("can_list_items")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
   orders     Order[]
+  itemListings  ItemListing[]
 
   @@map("users")
+}
+
+model ItemListing {
+  id          String   @id @default(cuid())
+  sellerId    String   @map("seller_id")
+  
+  // Item details
+  itemName    String   @map("item_name")
+  description String
+  categoryId  String   @map("category_id")
+  images      String[] // Array of image URLs
+  
+  // Rent specific (only rent for now)
+  listingType String   @default("RENT") @map("listing_type") // Always "RENT" for now
+  rentPerDay  Float    @map("rent_per_day") // What seller wants per day
+  platformFee Float    @map("platform_fee") // Your 20% cut
+  finalRent   Float    @map("final_rent") // What customer pays
+  
+  securityDeposit Float? @map("security_deposit")
+  
+  // Status
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED, LIVE, RENTED, INACTIVE
+  rejectionReason String? @map("rejection_reason")
+  
+  // Availability
+  quantity    Int      @default(1)
+  isAvailable Boolean  @default(true) @map("is_available")
+  
+  // Seller info (cached)
+  sellerName  String   @map("seller_name")
+  sellerRoom  String   @map("seller_room")
+  sellerPhone String   @map("seller_phone")
+  
+  // Timestamps
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  reviewedAt  DateTime? @map("reviewed_at")
+  listedAt    DateTime? @map("listed_at")
+  
+  // Relations
+  seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+  
+  @@map("item_listings")
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  email     String
+  token     String   @unique // 6-digit code or UUID
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("email_verifications")
 }
 
 model Category {
@@ -27,6 +85,7 @@ model Category {
   name      String    @unique
   createdAt DateTime  @default(now()) @map("created_at")
   products  Product[]
+  itemListings ItemListing[]
 
   @@map("categories")
 }
