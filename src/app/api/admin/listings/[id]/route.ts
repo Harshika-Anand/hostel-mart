@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 // PATCH - Approve/Reject listing
 export async function PATCH(
@@ -27,7 +28,7 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    const updateData: any = {
+    const updateData: Prisma.ItemListingUpdateInput = {
       status,
       reviewedAt: new Date()
     }

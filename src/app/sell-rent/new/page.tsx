@@ -82,8 +82,9 @@ export default function NewListingPage() {
 
       // Success - redirect to success page
       router.push('/sell-rent/pending')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

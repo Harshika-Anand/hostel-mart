@@ -50,8 +50,9 @@ export default function CompleteProfile() {
       
       // Sign out to force re-login with new email
       window.location.href = '/auth/signin'
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -80,8 +81,9 @@ export default function CompleteProfile() {
       // Send verification email
       await fetch('/api/auth/send-verification', { method: 'POST' })
       setEmailSent(true)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
