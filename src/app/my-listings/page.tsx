@@ -266,7 +266,7 @@ export default function MyListingsPage() {
                   {listing.status === 'PENDING' && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <p className="text-sm text-yellow-800">
-                        ⏳ Your listing is under review. You'll be notified once it's approved.
+                        ⏳ Your listing is under review. You will be notified once it is approved.
                       </p>
                     </div>
                   )}

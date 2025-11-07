@@ -135,7 +135,7 @@ export default function CompleteProfile() {
           </div>
 
           <p className="text-xs text-gray-500 mt-4 text-center">
-            After updating, you'll need to sign in again with your new email.
+            After updating, you will need to sign in again with your new email.
           </p>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function CompleteProfile() {
           <div className="text-6xl mb-4">📧</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Check Your Email</h2>
           <p className="text-gray-600 mb-6">
-            We've sent a verification link to <strong>{session?.user?.email}</strong>
+            We have sent a verification link to <strong>{session?.user?.email}</strong>
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Click the link in the email to verify your account and start listing items.
@@ -218,7 +218,7 @@ export default function CompleteProfile() {
         </form>
 
         <p className="text-xs text-gray-500 mt-4 text-center">
-          After saving, we'll send a verification email to confirm your account.
+          After saving, we will send a verification email to confirm your account.
         </p>
       </div>
     </div>
