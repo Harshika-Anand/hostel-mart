@@ -8,63 +8,68 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String
-  phone      String?
-  roomNumber String?  @map("room_number")
-  role       Role     @default(CUSTOMER)
-  password   String
-  emailVerified Boolean  @default(false) @map("email_verified")
-  canListItems  Boolean  @default(true) @map("can_list_items")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  orders     Order[]
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String
+  phone         String?
+  roomNumber    String?       @map("room_number")
+  role          Role          @default(CUSTOMER)
+  password      String
+  emailVerified Boolean       @default(false) @map("email_verified")
+  canListItems  Boolean       @default(true) @map("can_list_items")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  orders        Order[]
   itemListings  ItemListing[]
+
+  rentedItems    RentalTransaction[] @relation("RenterTransactions")
+  itemsRentedOut RentalTransaction[] @relation("SellerTransactions")
 
   @@map("users")
 }
 
 model ItemListing {
-  id          String   @id @default(cuid())
-  sellerId    String   @map("seller_id")
-  
+  id       String @id @default(cuid())
+  sellerId String @map("seller_id")
+
   // Item details
   itemName    String   @map("item_name")
   description String
   categoryId  String   @map("category_id")
   images      String[] // Array of image URLs
-  
+
   // Rent specific (only rent for now)
-  listingType String   @default("RENT") @map("listing_type") // Always "RENT" for now
-  rentPerDay  Float    @map("rent_per_day") // What seller wants per day
-  platformFee Float    @map("platform_fee") // Your 20% cut
-  finalRent   Float    @map("final_rent") // What customer pays
-  
+  listingType String @default("RENT") @map("listing_type") // Always "RENT" for now
+  rentPerDay  Float  @map("rent_per_day") // What seller wants per day
+  platformFee Float  @map("platform_fee") // Your 20% cut
+  finalRent   Float  @map("final_rent") // What customer pays
+
   securityDeposit Float? @map("security_deposit")
-  
+
   // Status
-  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED, LIVE, RENTED, INACTIVE
+  status          String  @default("PENDING") // PENDING, APPROVED, REJECTED, LIVE, RENTED, INACTIVE
   rejectionReason String? @map("rejection_reason")
-  
+
   // Availability
-  quantity    Int      @default(1)
-  isAvailable Boolean  @default(true) @map("is_available")
-  
+  quantity    Int     @default(1)
+  isAvailable Boolean @default(true) @map("is_available")
+
   // Seller info (cached)
-  sellerName  String   @map("seller_name")
-  sellerRoom  String   @map("seller_room")
-  sellerPhone String   @map("seller_phone")
-  
+  sellerName  String @map("seller_name")
+  sellerRoom  String @map("seller_room")
+  sellerPhone String @map("seller_phone")
+
   // Timestamps
-  submittedAt DateTime @default(now()) @map("submitted_at")
+  submittedAt DateTime  @default(now()) @map("submitted_at")
   reviewedAt  DateTime? @map("reviewed_at")
   listedAt    DateTime? @map("listed_at")
-  
+
   // Relations
-  seller   User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
-  
+  seller             User                @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category           Category            @relation(fields: [categoryId], references: [id])
+  currentlyRented    Int                 @default(0) @map("currently_rented")
+  rentalTransactions RentalTransaction[] @relation("ListingTransactions")
+
   @@map("item_listings")
 }
 
@@ -76,15 +81,15 @@ model EmailVerification {
   expiresAt DateTime @map("expires_at")
   isUsed    Boolean  @default(false) @map("is_used")
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   @@map("email_verifications")
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now()) @map("created_at")
-  products  Product[]
+  id           String        @id @default(cuid())
+  name         String        @unique
+  createdAt    DateTime      @default(now()) @map("created_at")
+  products     Product[]
   itemListings ItemListing[]
 
   @@map("categories")
@@ -183,4 +188,81 @@ enum PaymentStatus {
 enum DeliveryMethod {
   PICKUP
   DELIVERY
+}
+
+model RentalTransaction {
+  id String @id @default(cuid())
+
+  // Listing info
+  listingId String @map("listing_id")
+  itemName  String @map("item_name")
+
+  // Renter (customer) info
+  renterId    String  @map("renter_id")
+  renterName  String  @map("renter_name")
+  renterEmail String  @map("renter_email")
+  renterPhone String? @map("renter_phone")
+  renterRoom  String? @map("renter_room")
+
+  // Seller (item owner) info
+  sellerId    String @map("seller_id")
+  sellerName  String @map("seller_name")
+  sellerEmail String @map("seller_email")
+  sellerPhone String @map("seller_phone")
+  sellerRoom  String @map("seller_room")
+
+  // Financial details
+  rentPerDay      Float  @map("rent_per_day") // What customer pays per day
+  platformFee     Float  @map("platform_fee") // 20% fee per day
+  sellerEarning   Float  @map("seller_earning") // What seller gets per day
+  securityDeposit Float? @map("security_deposit")
+
+  // Rental period
+  startDate  DateTime  @map("start_date")
+  endDate    DateTime? @map("end_date") // null if still renting
+  daysRented Int       @default(0) @map("days_rented") // Updated daily
+
+  // Payment tracking
+  totalPaid Float @map("total_paid") // Amount customer paid upfront
+  dailyRate Float @map("daily_rate") // rentPerDay for calculation
+
+  // What platform owes seller (calculated daily)
+  amountOwedToSeller Float @default(0) @map("amount_owed_to_seller")
+  sellerPaidOut      Float @default(0) @map("seller_paid_out")
+
+  // Status tracking
+  status        RentalStatus        @default(ACTIVE)
+  paymentStatus RentalPaymentStatus @default(PAID) @map("payment_status")
+
+  // Payment details
+  paymentMethod String  @default("UPI") @map("payment_method")
+  paymentPin    String? @map("payment_pin")
+
+  // Timestamps
+  rentedAt       DateTime  @default(now()) @map("rented_at")
+  returnedAt     DateTime? @map("returned_at")
+  lastCalculated DateTime  @default(now()) @map("last_calculated")
+
+  // Admin notes
+  adminNotes String? @map("admin_notes")
+
+  // Relations
+  listing ItemListing @relation("ListingTransactions", fields: [listingId], references: [id], onDelete: Cascade)
+  renter  User        @relation("RenterTransactions", fields: [renterId], references: [id], onDelete: Cascade)
+  seller  User        @relation("SellerTransactions", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@map("rental_transactions")
+}
+
+enum RentalStatus {
+  PENDING // Payment being verified
+  ACTIVE // Currently rented
+  RETURNED // Item returned
+  CANCELLED // Cancelled before rental
+}
+
+enum RentalPaymentStatus {
+  PENDING // Initial payment pending
+  PAID // Initial payment received
+  SETTLED // Seller has been paid
 }

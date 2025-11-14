@@ -31,6 +31,12 @@ async function main() {
       where: { name: 'Beverages' },
       update: {},
       create: { name: 'Beverages' }
+    }),
+    // NEW: Stationary Category
+    prisma.category.upsert({
+      where: { name: 'Stationary' },
+      update: {},
+      create: { name: 'Stationary' }
     })
   ])
 
@@ -64,7 +70,23 @@ async function main() {
     { name: 'Frooti', price: 20, category: 'Beverages', stock: 30 },
     { name: 'Coca Cola', price: 25, category: 'Beverages', stock: 40 },
     { name: 'Thumbs Up', price: 25, category: 'Beverages', stock: 35 },
-    { name: 'Red Bull', price: 120, category: 'Beverages', stock: 15 }
+    { name: 'Red Bull', price: 120, category: 'Beverages', stock: 15 },
+    
+    // NEW: Stationary Items
+    { name: 'Ball Pen (Blue)', price: 5, category: 'Stationary', stock: 100 },
+    { name: 'Ball Pen (Black)', price: 5, category: 'Stationary', stock: 100 },
+    { name: 'Pencil (Pack of 10)', price: 30, category: 'Stationary', stock: 50 },
+    { name: 'Eraser', price: 5, category: 'Stationary', stock: 75 },
+    { name: 'Sharpener', price: 5, category: 'Stationary', stock: 60 },
+    { name: 'Notebook (A4)', price: 40, category: 'Stationary', stock: 40 },
+    { name: 'Notebook (A5)', price: 25, category: 'Stationary', stock: 50 },
+    { name: 'Stapler', price: 50, category: 'Stationary', stock: 20 },
+    { name: 'Stapler Pins', price: 15, category: 'Stationary', stock: 40 },
+    { name: 'Glue Stick', price: 20, category: 'Stationary', stock: 30 },
+    { name: 'Correction Pen', price: 25, category: 'Stationary', stock: 35 },
+    { name: 'Marker (Black)', price: 30, category: 'Stationary', stock: 25 },
+    { name: 'Highlighter Set', price: 50, category: 'Stationary', stock: 20 },
+    { name: 'Geometry Box', price: 80, category: 'Stationary', stock: 15 }
   ]
 
   // Clear existing products first (optional - for clean seeding)
