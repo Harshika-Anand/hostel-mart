@@ -30,6 +30,7 @@ interface RentalListing {
   sellerName: string
   sellerRoom: string
   sellerPhone: string
+  currentlyRented: number
   category: {
     id: string
     name: string
@@ -89,7 +90,7 @@ export default function Shop() {
         fetch('/api/shop/categories'),
         fetch('/api/admin/shop-settings')
       ])
-      
+
       if (!productsRes.ok || !categoriesRes.ok || !shopRes.ok) {
         throw new Error('Failed to fetch data')
       }
@@ -98,7 +99,7 @@ export default function Shop() {
       const rentalsData = rentalsRes.ok ? await rentalsRes.json() : []
       const categoriesData = await categoriesRes.json()
       const shopData = await shopRes.json()
-      
+
       setProducts(productsData)
       setRentals(rentalsData)
       setCategories(categoriesData)
@@ -165,7 +166,7 @@ export default function Shop() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={fetchData}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
@@ -243,16 +244,15 @@ export default function Shop() {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Shop</h1>
               <p className="text-gray-600 text-sm sm:text-base">Browse products and rentals</p>
             </div>
-            
+
             {session.user.role === 'ADMIN' && (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <span className="text-sm text-gray-600">Shop Status:</span>
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
-                    shopSettings.isOpen
+                  <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${shopSettings.isOpen
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
                   </span>
                   {!shopSettings.isOpen && (
@@ -268,31 +268,28 @@ export default function Shop() {
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setViewMode('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              viewMode === 'all'
+            className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             All ({products.filter(p => p.isAvailable && p.stockQuantity > 0).length + rentals.length})
           </button>
           <button
             onClick={() => setViewMode('buy')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              viewMode === 'buy'
+            className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'buy'
                 ? 'bg-green-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             🛒 Buy ({products.filter(p => p.isAvailable && p.stockQuantity > 0).length})
           </button>
           <button
             onClick={() => setViewMode('rent')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              viewMode === 'rent'
+            className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'rent'
                 ? 'bg-purple-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             🏷️ Rent ({rentals.length})
           </button>
@@ -320,19 +317,18 @@ export default function Shop() {
                     setSelectedCategory('all')
                     setShowMobileFilters(false)
                   }}
-                  className={`w-full text-left px-3 py-2 rounded transition ${
-                    selectedCategory === 'all'
+                  className={`w-full text-left px-3 py-2 rounded transition ${selectedCategory === 'all'
                       ? 'bg-blue-100 text-blue-900 font-medium'
                       : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+                    }`}
                 >
                   All Items ({totalItemsCount})
                 </button>
                 {categories.map(category => {
-                  const categoryCount = 
+                  const categoryCount =
                     (viewMode === 'rent' ? 0 : products.filter(p => p.isAvailable && p.stockQuantity > 0 && p.category.id === category.id).length) +
                     (viewMode === 'buy' ? 0 : rentals.filter(r => r.category.id === category.id).length)
-                  
+
                   return (
                     <button
                       key={category.id}
@@ -340,11 +336,10 @@ export default function Shop() {
                         setSelectedCategory(category.id)
                         setShowMobileFilters(false)
                       }}
-                      className={`w-full text-left px-3 py-2 rounded transition ${
-                        selectedCategory === category.id
+                      className={`w-full text-left px-3 py-2 rounded transition ${selectedCategory === category.id
                           ? 'bg-blue-100 text-blue-900 font-medium'
                           : 'hover:bg-gray-100 text-gray-700'
-                      }`}
+                        }`}
                     >
                       {category.name} ({categoryCount})
                     </button>
@@ -390,28 +385,26 @@ export default function Shop() {
               <div className="space-y-2">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`w-full text-left px-3 py-2 rounded transition ${
-                    selectedCategory === 'all'
+                  className={`w-full text-left px-3 py-2 rounded transition ${selectedCategory === 'all'
                       ? 'bg-blue-100 text-blue-900 font-medium'
                       : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+                    }`}
                 >
                   All Items ({totalItemsCount})
                 </button>
                 {categories.map(category => {
-                  const categoryCount = 
+                  const categoryCount =
                     (viewMode === 'rent' ? 0 : products.filter(p => p.isAvailable && p.stockQuantity > 0 && p.category.id === category.id).length) +
                     (viewMode === 'buy' ? 0 : rentals.filter(r => r.category.id === category.id).length)
-                  
+
                   return (
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
-                      className={`w-full text-left px-3 py-2 rounded transition ${
-                        selectedCategory === category.id
+                      className={`w-full text-left px-3 py-2 rounded transition ${selectedCategory === category.id
                           ? 'bg-blue-100 text-blue-900 font-medium'
                           : 'hover:bg-gray-100 text-gray-700'
-                      }`}
+                        }`}
                     >
                       {category.name} ({categoryCount})
                     </button>
@@ -489,11 +482,11 @@ export default function Shop() {
                   {viewMode === 'rent' ? '🏷️' : '🛒'}
                 </div>
                 <p className="text-gray-500 text-base sm:text-lg">
-                  {viewMode === 'rent' 
-                    ? 'No rental items available in this category' 
+                  {viewMode === 'rent'
+                    ? 'No rental items available in this category'
                     : viewMode === 'buy'
-                    ? 'No products available in this category'
-                    : 'No items available in this category'
+                      ? 'No products available in this category'
+                      : 'No items available in this category'
                   }
                 </p>
                 {selectedCategory !== 'all' && (
@@ -521,7 +514,7 @@ export default function Shop() {
                             {product.category.name}
                           </span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center mb-4">
                           <span className="text-xl sm:text-2xl font-bold text-green-600">₹{product.price}</span>
                           <span className={`text-sm ${product.stockQuantity < 5 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
@@ -591,7 +584,7 @@ export default function Shop() {
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                         {rental.itemName}
                       </h3>
-                      
+
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                         {rental.description}
                       </p>
@@ -627,14 +620,18 @@ export default function Shop() {
                       </div>
 
                       <button
-                        onClick={() => {
-                          // For now, just show contact info
-                          alert(`Contact ${rental.sellerName} at ${rental.sellerPhone} (Room ${rental.sellerRoom}) to rent this item.`)
-                        }}
-                        className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition font-medium"
-                      >
-                        Contact Owner
-                      </button>
+        onClick={() => {
+          console.log('Rental ID:', rental.id) // Debug log
+          router.push(`/rental-checkout?listingId=${rental.id}`)
+        }}
+        disabled={rental.quantity - (rental.currentlyRented || 0) <= 0}
+        className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {rental.quantity - (rental.currentlyRented || 0) <= 0 
+          ? '❌ Currently Unavailable' 
+          : '🏷️ Rent This Item'
+        }
+      </button>
                     </div>
                   </div>
                 ))}

@@ -52,75 +52,87 @@ export default function Navigation() {
             <Link href="/" className="text-xl font-bold text-blue-600 hover:text-blue-800 transition">
               🍕 Hostel Mart
             </Link>
-            
+
             {/* Desktop Navigation */}
             {session.user.role === 'CUSTOMER' && (
-  <div className="hidden md:flex space-x-6">
-    <Link
-      href="/shop"
-      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-        isActive('/shop')
-          ? 'text-blue-600 bg-blue-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      Shop
-    </Link>
-    <Link
-      href="/orders"
-      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-        isActive('/orders')
-          ? 'text-blue-600 bg-blue-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      My Orders
-    </Link>
-    <Link
-      href="/my-listings"
-      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-        isActive('/my-listings')
-          ? 'text-green-600 bg-green-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      My Listings
-    </Link>
-    {/* 👇 ADD THIS NEW LINK */}
-    <Link
-      href="/sell-rent"
-      className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-        isActive('/sell-rent')
-          ? 'text-green-600 bg-green-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      🏷️ Rent Your Items
-    </Link>
-  </div>
-)}
+              <div className="hidden md:flex space-x-6">
+                <Link
+                  href="/shop"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/shop')
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  Shop
+                </Link>
+                <Link
+                  href="/orders"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/orders')
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  My Orders
+                </Link>
+                <Link
+                  href="/my-rentals"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/my-rentals')
+                    ? 'text-purple-600 bg-purple-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  My Rentals
+                </Link>
+                <Link
+                  href="/my-listings"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/my-listings')
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  My Listings
+                </Link>
+                {/* 👇 ADD THIS NEW LINK */}
+                <Link
+                  href="/sell-rent"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/sell-rent')
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  🏷️ Rent Your Items
+                </Link>
+              </div>
+            )}
 
             {session.user.role === 'ADMIN' && (
               <div className="hidden md:flex space-x-6">
                 <Link
                   href="/admin"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                    isActive('/admin')
-                      ? 'text-green-600 bg-green-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/admin')
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                 >
                   Products
                 </Link>
                 <Link
                   href="/admin/orders"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                    isActive('/admin/orders')
-                      ? 'text-green-600 bg-green-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive('/admin/orders')
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                 >
                   Orders
+                </Link>
+                <Link
+                  href="/admin/rentals"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/admin/rentals')
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                  🏷️ Rentals
                 </Link>
               </div>
             )}
@@ -228,48 +240,54 @@ export default function Navigation() {
                   <Link
                     href="/shop"
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      isActive('/shop')
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/shop')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
                   >
                     🛍️ Shop
                   </Link>
                   <Link
                     href="/orders"
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      isActive('/orders')
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/orders')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
                   >
                     📋 My Orders
                   </Link>
                   <Link
-      href="/my-listings"
-      onClick={closeMobileMenu}
-      className={`block px-3 py-2 rounded-md text-base font-medium ${
-        isActive('/my-listings')
-          ? 'text-green-600 bg-green-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      📋 My Listings
-    </Link>
+                    href="/my-rentals"
+                    onClick={closeMobileMenu}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/my-rentals')
+                        ? 'text-purple-600 bg-purple-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                  >
+                    🏷️ My Rentals
+                  </Link>
                   <Link
-      href="/sell-rent"
-      onClick={closeMobileMenu}
-      className={`block px-3 py-2 rounded-md text-base font-medium ${
-        isActive('/sell-rent')
-          ? 'text-green-600 bg-green-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-      }`}
-    >
-      🏷️ Rent Your Items
-    </Link>
-                  
+                    href="/my-listings"
+                    onClick={closeMobileMenu}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/my-listings')
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                  >
+                    📋 My Listings
+                  </Link>
+                  <Link
+                    href="/sell-rent"
+                    onClick={closeMobileMenu}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/sell-rent')
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                  >
+                    🏷️ Rent Your Items
+                  </Link>
+
                   {/* Mobile cart info */}
                   {cartCount > 0 && (
                     <div className="px-3 py-2">
@@ -289,29 +307,27 @@ export default function Navigation() {
                   )}
                 </>
               )}
-              
+
               {/* Admin menu items */}
               {session.user.role === 'ADMIN' && (
                 <>
                   <Link
                     href="/admin"
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      isActive('/admin')
-                        ? 'text-green-600 bg-green-50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/admin')
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
                   >
                     📦 Products
                   </Link>
                   <Link
                     href="/admin/orders"
                     onClick={closeMobileMenu}
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${
-                      isActive('/admin/orders')
-                        ? 'text-green-600 bg-green-50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/admin/orders')
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
                   >
                     📋 Orders
                   </Link>

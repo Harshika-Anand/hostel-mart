@@ -1,8 +1,15 @@
+// src/app/my-listings/page.tsx - Updated version
 'use client'
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+
+interface RentalInfo {
+  activeRentals: number
+  totalEarnings: number
+  pendingPayout: number
+}
 
 interface Listing {
   id: string
@@ -13,6 +20,7 @@ interface Listing {
   finalRent: number
   securityDeposit: number | null
   quantity: number
+  currentlyRented: number
   status: string
   rejectionReason: string | null
   submittedAt: string
@@ -22,6 +30,7 @@ interface Listing {
     id: string
     name: string
   }
+  rentalInfo?: RentalInfo
 }
 
 export default function MyListingsPage() {
@@ -34,7 +43,9 @@ export default function MyListingsPage() {
     pending: 0,
     live: 0,
     rejected: 0,
-    totalEarnings: 0
+    totalEarnings: 0,
+    currentlyRented: 0,
+    totalPendingPayout: 0
   })
 
   useEffect(() => {
@@ -49,12 +60,15 @@ export default function MyListingsPage() {
 
   const fetchListings = async () => {
     try {
-      const response = await fetch('/api/listings/my')
+      const response = await fetch('/api/listings/my-with-rentals')
       if (response.ok) {
         const data: Listing[] = await response.json()
         setListings(data)
         
         // Calculate stats
+        const totalCurrentlyRented = data.reduce((sum, l) => sum + (l.currentlyRented || 0), 0)
+        const totalPendingPayout = data.reduce((sum, l) => sum + (l.rentalInfo?.pendingPayout || 0), 0)
+        
         const stats = {
           total: data.length,
           pending: data.filter(l => l.status === 'PENDING').length,
@@ -62,7 +76,9 @@ export default function MyListingsPage() {
           rejected: data.filter(l => l.status === 'REJECTED').length,
           totalEarnings: data
             .filter(l => l.status === 'LIVE')
-            .reduce((sum, l) => sum + l.rentPerDay, 0)
+            .reduce((sum, l) => sum + l.rentPerDay, 0),
+          currentlyRented: totalCurrentlyRented,
+          totalPendingPayout
         }
         setStats(stats)
       }
@@ -157,20 +173,10 @@ export default function MyListingsPage() {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <div className="text-3xl mr-4">⏳</div>
+              <div className="text-3xl mr-4">🤝</div>
               <div>
-                <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-                <div className="text-sm text-gray-600">Pending Review</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">✅</div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">{stats.live}</div>
-                <div className="text-sm text-gray-600">Live Listings</div>
+                <div className="text-2xl font-bold text-blue-600">{stats.currentlyRented}</div>
+                <div className="text-sm text-gray-600">Currently Rented</div>
               </div>
             </div>
           </div>
@@ -181,6 +187,16 @@ export default function MyListingsPage() {
               <div>
                 <div className="text-2xl font-bold text-green-600">₹{stats.totalEarnings}</div>
                 <div className="text-sm text-gray-600">Potential/Day</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="text-3xl mr-4">💸</div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">₹{stats.totalPendingPayout.toFixed(2)}</div>
+                <div className="text-sm text-gray-600">Pending Payout</div>
               </div>
             </div>
           </div>
@@ -214,9 +230,15 @@ export default function MyListingsPage() {
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(listing.status)}`}>
                           {getStatusIcon(listing.status)} {listing.status}
                         </span>
+                        {listing.currentlyRented > 0 && (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border-blue-200">
+                            🤝 {listing.currentlyRented} Rented
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {listing.category.name} • Quantity: {listing.quantity}
+                        {listing.category.name} • Quantity: {listing.quantity} 
+                        {listing.currentlyRented > 0 && ` (${listing.quantity - listing.currentlyRented} available)`}
                       </p>
                     </div>
                     <div className="text-right">
@@ -233,6 +255,30 @@ export default function MyListingsPage() {
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                     {listing.description}
                   </p>
+
+                  {/* Rental Info - Only if item is being rented */}
+                  {listing.rentalInfo && listing.rentalInfo.activeRentals > 0 && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                      <h4 className="font-semibold text-purple-900 mb-3">💰 Current Rental Earnings</h4>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Active Rentals:</span>
+                          <p className="font-bold text-purple-900">{listing.rentalInfo.activeRentals}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Total Earned:</span>
+                          <p className="font-bold text-purple-900">₹{listing.rentalInfo.totalEarnings.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Pending Payout:</span>
+                          <p className="font-bold text-orange-900">₹{listing.rentalInfo.pendingPayout.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-purple-700 mt-2">
+                        💡 Admin will pay you when the rental is returned
+                      </p>
+                    </div>
+                  )}
 
                   {/* Details Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
@@ -271,10 +317,18 @@ export default function MyListingsPage() {
                     </div>
                   )}
 
-                  {listing.status === 'LIVE' && (
+                  {listing.status === 'LIVE' && listing.currentlyRented === 0 && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <p className="text-sm text-green-800">
                         ✅ Your listing is live! Customers can now see and rent this item.
+                      </p>
+                    </div>
+                  )}
+
+                  {listing.status === 'LIVE' && listing.currentlyRented > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm text-blue-800">
+                        🤝 {listing.currentlyRented} of your items are currently rented out. Earnings are accumulating!
                       </p>
                     </div>
                   )}

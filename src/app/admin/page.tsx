@@ -250,8 +250,8 @@ export default function AdminDashboard() {
                 <button
                   onClick={toggleShopStatus}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${shopSettings.isOpen
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                      : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-red-100 text-red-800 hover:bg-red-200'
                     }`}
                 >
                   {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
@@ -263,6 +263,13 @@ export default function AdminDashboard() {
                 className="text-blue-600 hover:text-blue-800 font-medium text-sm"
               >
                 🏷️ Listing Requests
+              </button>
+
+              <button
+                onClick={() => router.push('/admin/rentals')}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                🏷️ Rental Management
               </button>
 
               <button
@@ -299,8 +306,8 @@ export default function AdminDashboard() {
                 <button
                   onClick={toggleShopStatus}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${shopSettings.isOpen
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                      : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-red-100 text-red-800 hover:bg-red-200'
                     }`}
                 >
                   {shopSettings.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
@@ -434,8 +441,8 @@ export default function AdminDashboard() {
             <button
               onClick={toggleShopStatus}
               className={`px-4 py-3 sm:px-6 sm:py-3 rounded-lg font-medium text-white transition text-sm w-full sm:w-auto ${shopSettings.isOpen
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-green-600 hover:bg-green-700'
                 }`}
             >
               {shopSettings.isOpen ? 'Close Shop' : 'Open Shop'}
@@ -502,8 +509,8 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
                         className={`px-3 py-1 rounded-full text-xs font-medium ${product.isAvailable
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'
                           }`}
                       >
                         {product.isAvailable ? 'Available' : 'Unavailable'}
@@ -599,8 +606,8 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
                         className={`px-3 py-1 rounded-full text-xs font-medium ${product.isAvailable
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'
                           }`}
                       >
                         {product.isAvailable ? 'Available' : 'Unavailable'}
