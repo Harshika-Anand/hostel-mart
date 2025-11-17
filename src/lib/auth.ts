@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
           roomNumber: user.roomNumber || undefined,
           phone: user.phone || undefined,
           emailVerified: user.emailVerified
-        } as any
+        } 
       }
     })
   ],
@@ -58,8 +58,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role
         token.roomNumber = user.roomNumber
-        token.phone = (user as any).phone
-        token.emailVerified = (user as any).emailVerified
+        token.phone = user.phone as string | undefined
+        token.emailVerified = user.emailVerified as boolean | undefined
       }
       return token
     },

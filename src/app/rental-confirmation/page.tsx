@@ -254,7 +254,7 @@ export default function RentalConfirmationPage() {
                 </div>
                 <div className="flex items-start">
                   <span className="font-bold mr-2">2.</span>
-                  <p>Once verified, you'll be able to contact the owner</p>
+                  <p>Once verified, you will be able to contact the owner</p>
                 </div>
                 <div className="flex items-start">
                   <span className="font-bold mr-2">3.</span>

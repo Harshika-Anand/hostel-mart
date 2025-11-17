@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 export async function PATCH(
   request: NextRequest,
@@ -27,7 +28,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 })
     }
 
-    const updateData: any = {}
+    // Use Prisma's generated type for the update data
+    const updateData: Prisma.RentalTransactionUpdateInput = {}
 
     // Handle status updates
     if (status) {

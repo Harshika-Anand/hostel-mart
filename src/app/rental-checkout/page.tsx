@@ -34,6 +34,23 @@ export default function RentalCheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  const fetchListing = async () => {
+    try {
+      const response = await fetch(`/api/listings/${listingId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setListing(data)
+      } else {
+        setError('Listing not found')
+      }
+    } catch (err) {
+      console.error('Error fetching listing:', err)
+      setError('Failed to load listing')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (status === 'loading') return
     if (!session) {
@@ -45,24 +62,7 @@ export default function RentalCheckoutPage() {
       return
     }
     fetchListing()
-  }, [session, status, listingId, router])
-
-  const fetchListing = async () => {
-    try {
-      const response = await fetch(`/api/listings/${listingId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setListing(data)
-      } else {
-        setError('Listing not found')
-      }
-    } catch (error) {
-      console.error('Error fetching listing:', error)
-      setError('Failed to load listing')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [session, status, listingId, router, fetchListing])
 
   const handleRent = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,8 +89,9 @@ export default function RentalCheckoutPage() {
 
       // Redirect to confirmation page
       router.push(`/rental-confirmation?rentalId=${data.rental.id}`)
-    } catch (err: any) {
-      setError(err.message || 'Failed to process rental')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process rental'
+      setError(errorMessage)
     } finally {
       setSubmitting(false)
     }
