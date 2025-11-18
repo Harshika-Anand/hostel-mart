@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import bgimg from '../bgimg.jpg'
+import OrderChat from '@/components/OrderChat'
 
 interface OrderItem {
   id: string
@@ -53,14 +54,14 @@ export default function OrderConfirmationPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderId = searchParams?.get('orderId')
-  
+
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) return
-    
+
     try {
       setError('')
       const response = await fetch(`/api/orders/${orderId}`)
@@ -192,16 +193,16 @@ export default function OrderConfirmationPage() {
         case 'ready':
           return {
             title: order.deliveryMethod === 'PICKUP' ? 'Ready for Pickup!' : 'Ready for Delivery!',
-            message: order.deliveryMethod === 'PICKUP' 
-              ? 'Your snacks are packed and ready for pickup from Room 401!' 
+            message: order.deliveryMethod === 'PICKUP'
+              ? 'Your snacks are packed and ready for pickup from Room 401!'
               : `Your snacks are packed and ready for delivery to room ${order.roomNumber}.`,
             icon: '📦'
           }
         case 'completed':
           return {
             title: 'Order Completed',
-            message: order.deliveryMethod === 'PICKUP' 
-              ? 'Your order has been picked up successfully. Thank you!' 
+            message: order.deliveryMethod === 'PICKUP'
+              ? 'Your order has been picked up successfully. Thank you!'
               : 'Your order has been delivered successfully. Thank you!',
             icon: '🎉'
           }
@@ -255,11 +256,11 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50"
-    style={{
-      backgroundImage: `url(${bgimg.src})`,
-      backgroundSize: 'cover',
-      backgroundAttachment: 'fixed'
-    }}>
+      style={{
+        backgroundImage: `url(${bgimg.src})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed'
+      }}>
       {/* Header */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -290,18 +291,18 @@ export default function OrderConfirmationPage() {
           {/* Order Details */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Order Details</h3>
-            
+
             <div className="space-y-4 text-gray-400">
               <div className="flex justify-between">
                 <span className="text-gray-600">Order Number:</span>
                 <span className="font-medium text-gray-400">{order.orderNumber || `#${order.id.slice(-8)}`}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Order Date:</span>
                 <span>{new Date(order.createdAt).toLocaleString('en-IN')}</span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Method:</span>
                 <span className="font-medium">
@@ -329,7 +330,7 @@ export default function OrderConfirmationPage() {
                   <span className="font-mono text-sm">{order.paymentPin}</span>
                 </div>
               )}
-              
+
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Amount:</span>
@@ -342,7 +343,7 @@ export default function OrderConfirmationPage() {
           {/* Items Ordered */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Items Ordered</h3>
-            
+
             <div className="space-y-4">
               {order.orderItems.map((item, index) => (
                 <div key={index} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0 text-gray-400">
@@ -457,6 +458,11 @@ export default function OrderConfirmationPage() {
             <p className="text-yellow-800">{order.adminNotes}</p>
           </div>
         )}
+
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">💬 Chat with Admin</h3>
+          <OrderChat orderId={order.id} />
+        </div>
 
         {/* Action Buttons */}
         <div className="flex justify-center space-x-4 mt-8">

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import bgimg from '../../bgimg.jpg'
+import OrderChat from '@/components/OrderChat'
 
 interface OrderItem {
   id: string
@@ -638,6 +639,11 @@ function OrderDetails({
           </div>
         </div>
       )}
+
+<div className="p-6 border-t">
+  <h4 className="font-semibold text-gray-900 mb-4">💬 Chat with Customer</h4>
+  <OrderChat orderId={order.id} customerName={order.customerName || order.user.name} />
+</div>
 
       {/* Admin Notes */}
       <div className="p-6">

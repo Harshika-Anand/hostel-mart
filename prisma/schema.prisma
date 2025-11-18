@@ -21,11 +21,29 @@ model User {
   updatedAt     DateTime      @updatedAt @map("updated_at")
   orders        Order[]
   itemListings  ItemListing[]
+  messages      Message[]
 
   rentedItems    RentalTransaction[] @relation("RenterTransactions")
   itemsRentedOut RentalTransaction[] @relation("SellerTransactions")
 
   @@map("users")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  senderId   String   @map("sender_id")
+  senderRole Role     @map("sender_role")
+  message    String   @db.Text
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([senderId])
+  @@map("messages")
 }
 
 model ItemListing {
@@ -134,6 +152,7 @@ model Order {
   readyAt        DateTime?      @map("ready_at")
   orderItems     OrderItem[]
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   Message[]
 
   @@map("orders")
 }
