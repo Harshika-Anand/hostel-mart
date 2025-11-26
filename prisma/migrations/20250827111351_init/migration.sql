@@ -109,3 +109,13 @@ ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_order_id_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Add missing columns to item_listings
+ALTER TABLE item_listings 
+ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+-- Add missing columns to users (if needed)
+ALTER TABLE users 
+ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN can_list_items BOOLEAN NOT NULL DEFAULT true;

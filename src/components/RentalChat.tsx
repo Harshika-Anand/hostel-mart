@@ -1,4 +1,4 @@
-// File: src/components/OrderChat.tsx
+// File: src/components/RentalChat.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -17,12 +17,12 @@ interface Message {
   }
 }
 
-interface OrderChatProps {
-  orderId: string
-  customerName?: string
+interface RentalChatProps {
+  rentalId: string
+  ownerName?: string
 }
 
-export default function OrderChat({ orderId, customerName }: OrderChatProps) {
+export default function RentalChat({ rentalId, ownerName }: RentalChatProps) {
   const { data: session } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -33,22 +33,22 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const isAdmin = session?.user?.role === 'ADMIN'
+  const isOwner = session?.user?.role === 'SELLER'
 
   // Quick reply templates
-  const quickReplies = isAdmin
+  const quickReplies = isOwner
     ? [
-        "Order confirmed! Preparing now 👨‍🍳",
-        "Your order is ready for pickup! 🎉",
-        "Coming to your room in 2 minutes 🏃",
-        "Item added to your order ✅",
-        "Sorry, that item is out of stock 😔"
+        "Item is in good condition ✅",
+        "Please return by the due date 📅",
+        "Let me know if you need help 🤝",
+        "Thanks for renting! 😊",
+        "Item location: [specify location] 📍"
       ]
     : [
-        "How long will it take? ⏰",
-        "Can I change my delivery room?",
-        "Please add extra items to my order",
-        "Can you make it less spicy? 🌶️",
+        "When should I return this? ⏰",
+        "Where should I return the item? 📍",
+        "Can I extend the rental period? 🔄",
+        "Item is working perfectly! ✅",
         "Thanks! 😊"
       ]
 
@@ -60,14 +60,14 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
   // Fetch messages
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/messages`)
+      const response = await fetch(`/api/rentals/${rentalId}/messages`)
       if (response.ok) {
         const data = await response.json()
         setMessages(data)
         
         // Mark messages as read
         if (data.some((m: Message) => !m.isRead && m.sender.id !== session?.user?.id)) {
-          await fetch(`/api/orders/${orderId}/messages`, {
+          await fetch(`/api/rentals/${rentalId}/messages`, {
             method: 'PATCH'
           })
         }
@@ -88,7 +88,7 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
     setError('')
 
     try {
-      const response = await fetch(`/api/orders/${orderId}/messages`, {
+      const response = await fetch(`/api/rentals/${rentalId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageText })
@@ -122,18 +122,18 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
   // Initial load
   useEffect(() => {
     fetchMessages()
-  }, [orderId])
+  }, [rentalId])
 
   // Poll for new messages every 5 seconds
   useEffect(() => {
     const interval = setInterval(fetchMessages, 5000)
     return () => clearInterval(interval)
-  }, [orderId])
+  }, [rentalId])
 
   // Scroll to bottom when messages change
-  //useEffect(() => {
-  //  scrollToBottom()
-  //}, [messages])
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   // Format time
   const formatTime = (dateString: string) => {
@@ -156,15 +156,15 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
   return (
     <div className="bg-white rounded-lg shadow flex flex-col h-[500px] sm:h-[600px]">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4 rounded-t-lg">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg">
-              {isAdmin ? `Chat with ${customerName || 'Customer'}` : 'Chat with Admin'}
+              {isOwner ? 'Chat with Renter' : `Chat with ${ownerName || 'Owner'}`}
             </h3>
-            <p className="text-blue-100 text-sm">Order #{orderId.slice(-8)}</p>
+            <p className="text-purple-100 text-sm">Rental #{rentalId.slice(-8)}</p>
           </div>
-          <div className="text-xs bg-blue-500 px-3 py-1 rounded-full">
+          <div className="text-xs bg-purple-500 px-3 py-1 rounded-full">
             💬 {messages.length} messages
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
             <div className="text-gray-400 text-4xl mb-3">💬</div>
             <p className="text-gray-500">No messages yet</p>
             <p className="text-gray-400 text-sm mt-1">
-              {isAdmin ? 'Customer will see messages here' : 'Send a message to get started'}
+              {isOwner ? 'Renter will see messages here' : 'Send a message to get started'}
             </p>
           </div>
         ) : (
@@ -198,7 +198,7 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
                     <div
                       className={`rounded-2xl px-4 py-2 ${
                         isMine
-                          ? 'bg-blue-600 text-white rounded-br-sm'
+                          ? 'bg-purple-600 text-white rounded-br-sm'
                           : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                       }`}
                     >
@@ -279,14 +279,14 @@ export default function OrderChat({ orderId, customerName }: OrderChatProps) {
             }}
             placeholder="Type your message..."
             rows={1}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
             disabled={sending}
           />
           
           <button
             type="submit"
             disabled={sending || !newMessage.trim()}
-            className="flex-shrink-0 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
+            className="flex-shrink-0 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
           >
             {sending ? '...' : 'Send'}
           </button>

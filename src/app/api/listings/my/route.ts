@@ -1,9 +1,10 @@
+// src/app/api/listings/my/route.ts
+// ============================================
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// GET - Fetch current user's listings only
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -12,6 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Fetch seller's listings - simple, no complex calculations
     const listings = await prisma.itemListing.findMany({
       where: {
         sellerId: session.user.id
@@ -20,13 +22,13 @@ export async function GET() {
         category: true
       },
       orderBy: {
-        submittedAt: 'desc'
+        createdAt: 'desc'
       }
     })
 
     return NextResponse.json(listings)
   } catch (error) {
-    console.error('Error fetching user listings:', error)
+    console.error('Error fetching listings:', error)
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 })

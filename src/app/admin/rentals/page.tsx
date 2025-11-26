@@ -1,3 +1,6 @@
+// FILE 1: src/app/admin/rentals/page.tsx
+// FIXED: Shows correct 80% payout calculations
+// ============================================
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -10,6 +13,8 @@ interface RentalTransaction {
   status: string
   paymentStatus: string
   rentPerDay: number
+  platformFee: number
+  sellerEarning: number
   daysRented: number
   amountOwedToSeller: number
   sellerPaidOut: number
@@ -32,9 +37,7 @@ interface PayoutSummary {
   sellerEmail: string
   sellerRoom: string
   totalOwed: number
-  totalEarned: number
-  totalPaid: number
-  activeRentals: number
+  pendingRentals: number
 }
 
 export default function AdminRentalsPage() {
@@ -43,7 +46,7 @@ export default function AdminRentalsPage() {
   const [rentals, setRentals] = useState<RentalTransaction[]>([])
   const [payouts, setPayouts] = useState<PayoutSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'payouts'>('active')
+  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed' | 'payouts'>('pending')
   const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
@@ -54,6 +57,30 @@ export default function AdminRentalsPage() {
     }
     fetchRentals()
   }, [session, status, router])
+
+  const calculateDaysElapsed = (startDate: string, returnedAt: string | null) => {
+    const start = new Date(startDate)
+    start.setHours(0, 0, 0, 0)
+    const end = returnedAt ? new Date(returnedAt) : new Date()
+    end.setHours(0, 0, 0, 0)
+    const diffTime = end.getTime() - start.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    return Math.max(0, diffDays)
+  }
+
+  const calculateReturnDate = (startDate: string, daysRented: number) => {
+    const start = new Date(startDate)
+    const returnDate = new Date(start)
+    returnDate.setDate(start.getDate() + daysRented)
+    return returnDate
+  }
+
+  // Calculate what seller will actually earn (80% of rent)
+  const calculateSellerPayout = (rental: RentalTransaction) => {
+    const totalRent = rental.rentPerDay * rental.daysRented
+    const platformCut = rental.platformFee * rental.daysRented
+    return totalRent - platformCut // 80% of rent
+  }
 
   const fetchRentals = async () => {
     try {
@@ -111,7 +138,7 @@ export default function AdminRentalsPage() {
   }
 
   const markPaidOut = async (sellerId: string, amount: number) => {
-    if (!confirm(`Mark ₹${amount} as paid out to seller?`)) return
+    if (!confirm(`Mark ₹${amount.toFixed(2)} as paid out to seller?`)) return
     
     try {
       const response = await fetch(`/api/admin/rentals/payout`, {
@@ -128,7 +155,8 @@ export default function AdminRentalsPage() {
     }
   }
 
-  const activeRentals = rentals.filter(r => r.status === 'ACTIVE' || r.status === 'PENDING')
+  const pendingRentals = rentals.filter(r => r.status === 'PENDING')
+  const activeRentals = rentals.filter(r => r.status === 'ACTIVE')
   const completedRentals = rentals.filter(r => r.status === 'RETURNED')
 
   if (loading) {
@@ -141,7 +169,6 @@ export default function AdminRentalsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -162,6 +189,10 @@ export default function AdminRentalsPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-2xl font-bold text-yellow-600">{pendingRentals.length}</div>
+            <div className="text-sm text-gray-600">Pending Verification</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
             <div className="text-2xl font-bold text-blue-600">{activeRentals.length}</div>
             <div className="text-sm text-gray-600">Active Rentals</div>
           </div>
@@ -173,19 +204,23 @@ export default function AdminRentalsPage() {
             <div className="text-2xl font-bold text-purple-600">
               ₹{payouts.reduce((sum, p) => sum + p.totalOwed, 0).toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600">Total Owed to Sellers</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-2xl font-bold text-orange-600">
-              ₹{activeRentals.reduce((sum, r) => sum + r.amountOwedToSeller, 0).toFixed(2)}
-            </div>
-            <div className="text-sm text-gray-600">Daily Accumulating</div>
+            <div className="text-sm text-gray-600">Pending Payouts</div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="flex border-b">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-6 py-3 font-medium ${
+                activeTab === 'pending'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Pending ({pendingRentals.length})
+            </button>
             <button
               onClick={() => setActiveTab('active')}
               className={`px-6 py-3 font-medium ${
@@ -194,7 +229,7 @@ export default function AdminRentalsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Active Rentals ({activeRentals.length})
+              Active ({activeRentals.length})
             </button>
             <button
               onClick={() => setActiveTab('completed')}
@@ -214,10 +249,107 @@ export default function AdminRentalsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Seller Payouts ({payouts.length})
+              Payouts ({payouts.length})
             </button>
           </div>
         </div>
+
+        {/* Pending Rentals */}
+        {activeTab === 'pending' && (
+          <div className="space-y-4">
+            {pendingRentals.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <p className="text-gray-500">No pending payment verifications</p>
+              </div>
+            ) : (
+              pendingRentals.map(rental => {
+                // ✅ CORRECT CALCULATION: 80% of rent only
+                const totalRent = rental.rentPerDay * rental.daysRented
+                const platformCut = rental.platformFee * rental.daysRented
+                const sellerEarning = totalRent - platformCut
+
+                return (
+                  <div key={rental.id} className="bg-white rounded-lg shadow border border-yellow-200">
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{rental.itemName}</h3>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 inline-block mt-2">
+                            ⏳ PAYMENT PENDING
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-purple-600">₹{rental.totalPaid}</div>
+                          <p className="text-sm text-gray-600">{rental.daysRented} days</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-500 font-medium">Customer:</span>
+                          <p className="font-semibold text-gray-900">{rental.renterName}</p>
+                          <p className="text-gray-600">{rental.renterEmail}</p>
+                          <p className="text-gray-600">Room: {rental.renterRoom || 'N/A'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-500 font-medium">Owner:</span>
+                          <p className="font-semibold text-gray-900">{rental.sellerName}</p>
+                          <p className="text-gray-600">{rental.sellerEmail}</p>
+                          <p className="text-gray-600">Room: {rental.sellerRoom}</p>
+                        </div>
+                      </div>
+
+                      {/* ✅ CORRECT BREAKDOWN */}
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-sm text-gray-900 mb-3">Payment Breakdown:</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Total Customer Paid:</span>
+                            <span className="font-bold text-blue-900">₹{rental.totalPaid}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">├─ Rent ({rental.daysRented} days):</span>
+                            <span className="font-medium text-gray-900">₹{totalRent}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">└─ Security Deposit:</span>
+                            <span className="font-medium text-gray-900">₹{rental.securityDeposit}</span>
+                          </div>
+                          <div className="border-t pt-2 mt-2"></div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Platform Fee (20%):</span>
+                            <span className="font-medium text-orange-900">-₹{platformCut}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 font-semibold">Owner Will Earn (80%):</span>
+                            <span className="font-bold text-green-900">₹{sellerEarning}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-3">
+                          💡 Security deposit will be returned to customer. Owner gets 80% of rent only.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => approvePayment(rental.id)}
+                        disabled={updating === rental.id}
+                        className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium"
+                      >
+                        ✅ Verify Payment & Activate Rental
+                      </button>
+
+                      {rental.paymentPin && (
+                        <p className="text-xs text-gray-500 mt-3">
+                          UPI PIN: {rental.paymentPin}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
 
         {/* Active Rentals */}
         {activeTab === 'active' && (
@@ -227,100 +359,87 @@ export default function AdminRentalsPage() {
                 <p className="text-gray-500">No active rentals</p>
               </div>
             ) : (
-              activeRentals.map(rental => (
-                <div key={rental.id} className="bg-white rounded-lg shadow border">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{rental.itemName}</h3>
-                        <div className="flex gap-2 mt-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            rental.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                            rental.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {rental.status}
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            rental.paymentStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            Payment: {rental.paymentStatus}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">₹{rental.rentPerDay}/day</div>
-                        <div className="text-sm text-gray-500">Days: {rental.daysRented}</div>
-                      </div>
-                    </div>
+              activeRentals.map(rental => {
+                const daysElapsed = calculateDaysElapsed(rental.startDate, null)
+                const returnDate = calculateReturnDate(rental.startDate, rental.daysRented)
+                const isOverdue = daysElapsed >= rental.daysRented
+                
+                // ✅ CORRECT: Show 80% of rent as seller payout
+                const sellerPayout = calculateSellerPayout(rental)
 
-                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Renter:</span>
-                        <p className="font-medium">{rental.renterName}</p>
-                        <p className="text-gray-600">{rental.renterEmail}</p>
-                        <p className="text-gray-600">Room: {rental.renterRoom || 'N/A'}</p>
+                return (
+                  <div key={rental.id} className="bg-white rounded-lg shadow border">
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{rental.itemName}</h3>
+                          <div className="flex gap-2 mt-2">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ACTIVE
+                            </span>
+                            {isOverdue && (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                OVERDUE
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-gray-900">
+                            Day {daysElapsed + 1}/{rental.daysRented}
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Return by {returnDate.toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short'
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Owner:</span>
-                        <p className="font-medium">{rental.sellerName}</p>
-                        <p className="text-gray-600">{rental.sellerEmail}</p>
-                        <p className="text-gray-600">Room: {rental.sellerRoom}</p>
-                      </div>
-                    </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Customer Paid:</span>
-                          <p className="font-bold text-blue-900">₹{rental.totalPaid}</p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-500 font-medium">Customer:</span>
+                          <p className="font-semibold text-gray-900">{rental.renterName}</p>
+                          <p className="text-gray-600">{rental.renterRoom || 'N/A'}</p>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Owed to Seller:</span>
-                          <p className="font-bold text-purple-900">₹{rental.amountOwedToSeller.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Already Paid Out:</span>
-                          <p className="font-bold text-green-900">₹{rental.sellerPaidOut.toFixed(2)}</p>
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-500 font-medium">Owner:</span>
+                          <p className="font-semibold text-gray-900">{rental.sellerName}</p>
+                          <p className="text-gray-600">{rental.sellerRoom}</p>
                         </div>
                       </div>
-                      {rental.securityDeposit > 0 && (
-                        <p className="text-xs text-blue-700 mt-2">
-                          🔒 Security Deposit: ₹{rental.securityDeposit}
+
+                      {/* ✅ CORRECT Financial Summary */}
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-gray-600">Customer Paid:</span>
+                            <p className="font-bold text-blue-900">₹{rental.totalPaid}</p>
+                            <p className="text-xs text-gray-500">(Rent + Security)</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Owner Will Earn:</span>
+                            <p className="font-bold text-green-900">₹{sellerPayout}</p>
+                            <p className="text-xs text-gray-500">(80% of rent)</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          💡 Payout ready after return
                         </p>
-                      )}
-                    </div>
+                      </div>
 
-                    <div className="flex gap-3">
-                      {rental.paymentStatus === 'PENDING' && (
-                        <button
-                          onClick={() => approvePayment(rental.id)}
-                          disabled={updating === rental.id}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-                        >
-                          ✅ Verify Payment
-                        </button>
-                      )}
-                      {rental.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => markReturned(rental.id)}
-                          disabled={updating === rental.id}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          📦 Mark as Returned
-                        </button>
-                      )}
+                      <button
+                        onClick={() => markReturned(rental.id)}
+                        disabled={updating === rental.id}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                      >
+                        📦 Mark as Returned
+                      </button>
                     </div>
-
-                    {rental.paymentPin && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        UPI PIN: {rental.paymentPin}
-                      </p>
-                    )}
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         )}
@@ -333,67 +452,71 @@ export default function AdminRentalsPage() {
                 <p className="text-gray-500">No completed rentals</p>
               </div>
             ) : (
-              completedRentals.map(rental => (
-                <div key={rental.id} className="bg-white rounded-lg shadow border">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{rental.itemName}</h3>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 inline-block mt-2">
-                          RETURNED
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-gray-900">
-                          Total: ₹{(rental.rentPerDay * rental.daysRented).toFixed(2)}
+              completedRentals.map(rental => {
+                return (
+                  <div key={rental.id} className="bg-white rounded-lg shadow border">
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{rental.itemName}</h3>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 inline-block mt-2">
+                            ✅ RETURNED
+                          </span>
                         </div>
-                        <div className="text-sm text-gray-500">{rental.daysRented} days rented</div>
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-gray-900">
+                            {rental.daysRented} days
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {new Date(rental.returnedAt!).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short'
+                            })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Renter:</span>
-                        <p className="font-medium">{rental.renterName}</p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-600">Customer:</span>
+                          <p className="font-medium">{rental.renterName}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                          <span className="text-gray-600">Owner:</span>
+                          <p className="font-medium">{rental.sellerName}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500">Owner:</span>
-                        <p className="font-medium">{rental.sellerName}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Duration:</span>
-                        <p className="font-medium">
-                          {new Date(rental.startDate).toLocaleDateString()} - 
-                          {rental.returnedAt ? new Date(rental.returnedAt).toLocaleDateString() : 'Ongoing'}
+
+                      {/* ✅ CORRECT: Shows 80% payout */}
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-sm text-gray-600">Owner Payout (80% of rent):</span>
+                            <p className="text-2xl font-bold text-purple-900">
+                              ₹{rental.amountOwedToSeller.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            rental.paymentStatus === 'SETTLED'
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {rental.paymentStatus === 'SETTLED' ? '✅ Paid' : '⏳ Pending'}
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Security deposit (₹{rental.securityDeposit}) returned to customer
                         </p>
                       </div>
                     </div>
-
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-gray-600">Amount Owed to Seller:</span>
-                          <p className="text-xl font-bold text-purple-900">
-                            ₹{(rental.amountOwedToSeller - rental.sellerPaidOut).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          rental.paymentStatus === 'SETTLED' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {rental.paymentStatus === 'SETTLED' ? 'Paid Out' : 'Pending Payout'}
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         )}
 
-        {/* Seller Payouts */}
+        {/* Payouts Tab */}
         {activeTab === 'payouts' && (
           <div className="space-y-4">
             {payouts.length === 0 ? (
@@ -402,47 +525,31 @@ export default function AdminRentalsPage() {
               </div>
             ) : (
               payouts.map(payout => (
-                <div key={payout.sellerId} className="bg-white rounded-lg shadow border">
+                <div key={payout.sellerId} className="bg-white rounded-lg shadow border border-purple-200">
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">{payout.sellerName}</h3>
                         <p className="text-sm text-gray-600">{payout.sellerEmail}</p>
                         <p className="text-sm text-gray-600">Room: {payout.sellerRoom}</p>
+                        <p className="text-xs text-purple-600 mt-1">
+                          {payout.pendingRentals} completed {payout.pendingRentals === 1 ? 'rental' : 'rentals'}
+                        </p>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold text-purple-600">
                           ₹{payout.totalOwed.toFixed(2)}
                         </div>
-                        <div className="text-sm text-gray-500">Total Owed</div>
+                        <div className="text-sm text-gray-500">To Pay (80% of rent)</div>
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Active Rentals:</span>
-                          <p className="font-medium">{payout.activeRentals}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Total Earnings:</span>
-                          <p className="font-medium">₹{payout.totalEarned.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Already Paid:</span>
-                          <p className="font-medium">₹{payout.totalPaid.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {payout.totalOwed > 0 && (
-                      <button
-                        onClick={() => markPaidOut(payout.sellerId, payout.totalOwed)}
-                        className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-medium"
-                      >
-                        💰 Mark as Paid Out (₹{payout.totalOwed.toFixed(2)})
-                      </button>
-                    )}
+                    <button
+                      onClick={() => markPaidOut(payout.sellerId, payout.totalOwed)}
+                      className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium"
+                    >
+                      💰 Mark as Paid Out
+                    </button>
                   </div>
                 </div>
               ))

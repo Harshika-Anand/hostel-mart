@@ -1,10 +1,10 @@
 // src/app/api/rentals/[id]/route.ts
+// ============================================
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// GET - Fetch single rental transaction
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -33,8 +33,7 @@ export async function GET(
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 })
     }
 
-    // Check if user has access to this rental
-    // Either they're the renter, seller, or admin
+    // Check access
     const hasAccess = 
       session.user.id === rental.renterId ||
       session.user.id === rental.sellerId ||
@@ -53,3 +52,4 @@ export async function GET(
     }, { status: 500 })
   }
 }
+

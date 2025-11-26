@@ -8,7 +8,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   
   try {
     const data = await resend.emails.send({
-      from: 'Hostel Mart <onboarding@resend.dev>', // Change this to your verified domain
+      from: 'Hostel Mart <hanand_be23@thapar.edu>', // Change this to your verified domain
       to: [email],
       subject: 'Verify your email - Hostel Mart',
       html: `
@@ -84,7 +84,7 @@ export async function sendOrderConfirmationEmail(
     `).join('')
 
     const data = await resend.emails.send({
-      from: 'Hostel Mart <onboarding@resend.dev>',
+      from: 'Hostel Mart <hanand_be23@thapar.edu>',
       to: [email],
       subject: `Order Confirmed - ${orderDetails.orderNumber}`,
       html: `

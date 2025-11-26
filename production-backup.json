@@ -1,0 +1,270 @@
+{
+  "users": [
+    {
+      "id": "cmeu8b629000320048om8oe3n",
+      "email": "hanand_be23@thapar.edu",
+      "name": "Harshika Anand ",
+      "phone": "",
+      "roomNumber": "401",
+      "role": "ADMIN",
+      "password": "$2b$12$v.Gct4Jnp.6f1dtpOZkNPuA1GvH1USTxnTtueU/jGR4DqqAr//X8W",
+      "emailVerified": false,
+      "canListItems": true,
+      "createdAt": "2025-08-27T17:08:26.097Z",
+      "updatedAt": "2025-08-27T17:08:26.097Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cmetvnq1g000020bssauys8il",
+      "name": "Chips",
+      "createdAt": "2025-08-27T11:14:16.853Z"
+    },
+    {
+      "id": "cmetvnr0h000420bsegrhvh16",
+      "name": "Beverages",
+      "createdAt": "2025-08-27T11:14:16.859Z"
+    },
+    {
+      "id": "cmetvnr0g000220bsyst73k3m",
+      "name": "Noodles",
+      "createdAt": "2025-08-27T11:14:16.858Z"
+    },
+    {
+      "id": "cmetvnr0h000320bs8bcc3x21",
+      "name": "Chocolates",
+      "createdAt": "2025-08-27T11:14:16.855Z"
+    },
+    {
+      "id": "cmetvnr0g000120bsv4o4qo8r",
+      "name": "Biscuits",
+      "createdAt": "2025-08-27T11:14:16.857Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "cmeu7xjvi0006203g3sojaews",
+      "name": "Lays Classic",
+      "price": 20,
+      "stockQuantity": 50,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnq1g000020bssauys8il",
+      "createdAt": "2025-08-27T16:57:50.814Z",
+      "updatedAt": "2025-08-27T16:57:50.814Z"
+    },
+    {
+      "id": "cmeu7xk9m0008203gvyrqvvkk",
+      "name": "Kurkure Masala Munch",
+      "price": 15,
+      "stockQuantity": 30,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnq1g000020bssauys8il",
+      "createdAt": "2025-08-27T16:57:51.322Z",
+      "updatedAt": "2025-08-27T16:57:51.322Z"
+    },
+    {
+      "id": "cmeu7xkdl000a203g8q8fzyxk",
+      "name": "Balaji Wafers",
+      "price": 10,
+      "stockQuantity": 25,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnq1g000020bssauys8il",
+      "createdAt": "2025-08-27T16:57:51.465Z",
+      "updatedAt": "2025-08-27T16:57:51.465Z"
+    },
+    {
+      "id": "cmeu7xki5000c203g4oxj5ofv",
+      "name": "Bingo Mad Angles",
+      "price": 20,
+      "stockQuantity": 40,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnq1g000020bssauys8il",
+      "createdAt": "2025-08-27T16:57:51.629Z",
+      "updatedAt": "2025-08-27T16:57:51.629Z"
+    },
+    {
+      "id": "cmeu7xknu000e203gjrdeocnk",
+      "name": "Dairy Milk",
+      "price": 40,
+      "stockQuantity": 35,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000320bs8bcc3x21",
+      "createdAt": "2025-08-27T16:57:51.834Z",
+      "updatedAt": "2025-08-27T16:57:51.834Z"
+    },
+    {
+      "id": "cmeu7xkvo000g203gtjugnnal",
+      "name": "KitKat",
+      "price": 20,
+      "stockQuantity": 45,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000320bs8bcc3x21",
+      "createdAt": "2025-08-27T16:57:52.116Z",
+      "updatedAt": "2025-08-27T16:57:52.116Z"
+    },
+    {
+      "id": "cmeu7xkzg000i203gt5k4kutb",
+      "name": "5 Star",
+      "price": 10,
+      "stockQuantity": 60,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000320bs8bcc3x21",
+      "createdAt": "2025-08-27T16:57:52.252Z",
+      "updatedAt": "2025-08-27T16:57:52.252Z"
+    },
+    {
+      "id": "cmeu7xl4y000k203gd2h4ov78",
+      "name": "Snickers",
+      "price": 35,
+      "stockQuantity": 20,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000320bs8bcc3x21",
+      "createdAt": "2025-08-27T16:57:52.451Z",
+      "updatedAt": "2025-08-27T16:57:52.451Z"
+    },
+    {
+      "id": "cmeu7xlak000m203gdrbtsg8e",
+      "name": "Parle-G",
+      "price": 15,
+      "stockQuantity": 40,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000120bsv4o4qo8r",
+      "createdAt": "2025-08-27T16:57:52.652Z",
+      "updatedAt": "2025-08-27T16:57:52.652Z"
+    },
+    {
+      "id": "cmeu7xlgb000o203gmshhrevm",
+      "name": "Oreo",
+      "price": 30,
+      "stockQuantity": 25,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000120bsv4o4qo8r",
+      "createdAt": "2025-08-27T16:57:52.859Z",
+      "updatedAt": "2025-08-27T16:57:52.859Z"
+    },
+    {
+      "id": "cmeu7xlou000q203gy4yul56q",
+      "name": "Good Day",
+      "price": 25,
+      "stockQuantity": 35,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000120bsv4o4qo8r",
+      "createdAt": "2025-08-27T16:57:53.166Z",
+      "updatedAt": "2025-08-27T16:57:53.166Z"
+    },
+    {
+      "id": "cmeu7xluk000s203gte6jqrwu",
+      "name": "Hide & Seek",
+      "price": 30,
+      "stockQuantity": 20,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000120bsv4o4qo8r",
+      "createdAt": "2025-08-27T16:57:53.372Z",
+      "updatedAt": "2025-08-27T16:57:53.372Z"
+    },
+    {
+      "id": "cmeu7xm06000u203gsdjcvj2u",
+      "name": "Maggi 2-Minute",
+      "price": 12,
+      "stockQuantity": 80,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000220bsyst73k3m",
+      "createdAt": "2025-08-27T16:57:53.575Z",
+      "updatedAt": "2025-08-27T16:57:53.575Z"
+    },
+    {
+      "id": "cmeu7xm61000w203gvlr3fgu4",
+      "name": "Yippee Noodles",
+      "price": 12,
+      "stockQuantity": 60,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000220bsyst73k3m",
+      "createdAt": "2025-08-27T16:57:53.785Z",
+      "updatedAt": "2025-08-27T16:57:53.785Z"
+    },
+    {
+      "id": "cmeu7xmbn000y203gv7hv21tx",
+      "name": "Top Ramen",
+      "price": 15,
+      "stockQuantity": 40,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000220bsyst73k3m",
+      "createdAt": "2025-08-27T16:57:53.987Z",
+      "updatedAt": "2025-08-27T16:57:53.987Z"
+    },
+    {
+      "id": "cmeu7xmha0010203gcjj8gehs",
+      "name": "Wai Wai",
+      "price": 10,
+      "stockQuantity": 50,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0g000220bsyst73k3m",
+      "createdAt": "2025-08-27T16:57:54.191Z",
+      "updatedAt": "2025-08-27T16:57:54.191Z"
+    },
+    {
+      "id": "cmeu7xmn10012203g5bccpai8",
+      "name": "Frooti",
+      "price": 20,
+      "stockQuantity": 30,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000420bsegrhvh16",
+      "createdAt": "2025-08-27T16:57:54.397Z",
+      "updatedAt": "2025-08-27T16:57:54.397Z"
+    },
+    {
+      "id": "cmeu7xmvh0014203g1xqmjpiz",
+      "name": "Coca Cola",
+      "price": 25,
+      "stockQuantity": 40,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000420bsegrhvh16",
+      "createdAt": "2025-08-27T16:57:54.701Z",
+      "updatedAt": "2025-08-27T16:57:54.701Z"
+    },
+    {
+      "id": "cmeu7xn140016203gkrw51ink",
+      "name": "Thumbs Up",
+      "price": 25,
+      "stockQuantity": 35,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000420bsegrhvh16",
+      "createdAt": "2025-08-27T16:57:54.905Z",
+      "updatedAt": "2025-08-27T16:57:54.905Z"
+    },
+    {
+      "id": "cmeu7xn6u0018203gayitusv5",
+      "name": "Red Bull",
+      "price": 120,
+      "stockQuantity": 15,
+      "imageUrl": null,
+      "isAvailable": true,
+      "categoryId": "cmetvnr0h000420bsegrhvh16",
+      "createdAt": "2025-08-27T16:57:55.110Z",
+      "updatedAt": "2025-08-27T16:57:55.110Z"
+    }
+  ],
+  "orders": [],
+  "listings": [],
+  "rentals": [],
+  "shopSettings": []
+}

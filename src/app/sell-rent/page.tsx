@@ -36,11 +36,11 @@ export default function SellRentPage() {
       }
 
       // Check if email is verified
-      if (!profile.emailVerified) {
+     /* if (!profile.emailVerified) {
         setProfileStatus('needs-verification')
         setChecking(false)
         return
-      }
+      }*/
 
       // All good - redirect to listing form
       setProfileStatus('complete')
@@ -83,7 +83,7 @@ export default function SellRentPage() {
     return null // Will redirect in useEffect
   }
 
-  if (profileStatus === 'needs-verification') {
+ /* if (profileStatus === 'needs-verification') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow max-w-md w-full text-center">
@@ -102,6 +102,6 @@ export default function SellRentPage() {
       </div>
     )
   }
-
+*/
   return null // Will redirect to /sell-rent/new in useEffect
 }

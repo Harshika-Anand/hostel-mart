@@ -25,6 +25,7 @@ model User {
 
   rentedItems    RentalTransaction[] @relation("RenterTransactions")
   itemsRentedOut RentalTransaction[] @relation("SellerTransactions")
+  rentalMessages RentalMessage[]     
 
   @@map("users")
 }
@@ -65,7 +66,7 @@ model ItemListing {
   securityDeposit Float? @map("security_deposit")
 
   // Status
-  status          String  @default("PENDING") // PENDING, APPROVED, REJECTED, LIVE, RENTED, INACTIVE
+ status          ListingStatus  @default(PENDING) // PENDING, APPROVED, REJECTED, LIVE, RENTED, INACTIVE
   rejectionReason String? @map("rejection_reason")
 
   // Availability
@@ -81,6 +82,8 @@ model ItemListing {
   submittedAt DateTime  @default(now()) @map("submitted_at")
   reviewedAt  DateTime? @map("reviewed_at")
   listedAt    DateTime? @map("listed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   // Relations
   seller             User                @relation(fields: [sellerId], references: [id], onDelete: Cascade)
@@ -88,7 +91,25 @@ model ItemListing {
   currentlyRented    Int                 @default(0) @map("currently_rented")
   rentalTransactions RentalTransaction[] @relation("ListingTransactions")
 
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
   @@map("item_listings")
+}
+
+model RentalMessage {
+  id        String   @id @default(cuid())
+  rentalId  String   @map("rental_id")
+  senderId  String   @map("sender_id")
+  message   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  rental RentalTransaction @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  sender User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  @@index([rentalId])
+  @@index([senderId])
+  @@map("rental_messages")
 }
 
 model EmailVerification {
@@ -269,6 +290,7 @@ model RentalTransaction {
   listing ItemListing @relation("ListingTransactions", fields: [listingId], references: [id], onDelete: Cascade)
   renter  User        @relation("RenterTransactions", fields: [renterId], references: [id], onDelete: Cascade)
   seller  User        @relation("SellerTransactions", fields: [sellerId], references: [id], onDelete: Cascade)
+  rentalMessages RentalMessage[]
 
   @@map("rental_transactions")
 }
@@ -282,6 +304,13 @@ enum RentalStatus {
 
 enum RentalPaymentStatus {
   PENDING // Initial payment pending
-  PAID // Initial payment received
+  PAID // Initial paymenPt received
   SETTLED // Seller has been paid
+}
+
+enum ListingStatus {
+  PENDING
+  LIVE
+  REJECTED
+  INACTIVE
 }

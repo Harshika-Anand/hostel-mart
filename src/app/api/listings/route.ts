@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    if (!user.emailVerified) {
+   /* if (!user.emailVerified) {
       return NextResponse.json({ 
         error: 'Please verify your email first' 
       }, { status: 400 })
-    }
+    }*/
 
     const body = await request.json()
     const { 
