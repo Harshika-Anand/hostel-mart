@@ -277,7 +277,7 @@ export default function MyListingsPage() {
                   {listing.status === 'LIVE' && listing.currentlyRented === 0 && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <p className="text-sm text-green-800">
-                        ✅ Your listing is live! Customers can now rent this item. You'll earn 80% of rent.
+                        ✅ Your listing is live! Customers can now rent this item. You will earn 80% of rent.
                       </p>
                     </div>
                   )}
@@ -286,7 +286,7 @@ export default function MyListingsPage() {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <p className="text-sm text-blue-800">
                         🤝 {listing.currentlyRented} of {listing.quantity} items currently rented. 
-                        You'll receive 80% of rent (₹{listing.rentPerDay}/day) after return.
+                        You will receive 80% of rent (₹{listing.rentPerDay}/day) after return.
                       </p>
                     </div>
                   )}

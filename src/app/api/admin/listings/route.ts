@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ListingStatus } from '@prisma/client'
 
 // GET - Fetch all listings (admin only)
 export async function GET(request: NextRequest) {
@@ -15,19 +16,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
+    const whereClause = status && status !== 'all' 
+      ? { status: status as ListingStatus } 
+      
+      : {}
+
     const listings = await prisma.itemListing.findMany({
-      where: {
-        ...(status && status !== 'all' ? { status } : {})
-      },
+      where: whereClause,
       include: {
-        category: true,
         seller: {
           select: {
             id: true,
             name: true,
             email: true,
-            phone: true,
-            roomNumber: true
+            roomNumber: true,
+            phone: true
+          }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true
           }
         }
       },

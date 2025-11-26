@@ -1,114 +1,18 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+// File: src/app/api/listings/route.ts
+// Complete fixed version with proper TypeScript typing
 
-// POST - Submit new rental listing
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session || session.user.role !== 'CUSTOMER') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { ListingStatus } from '@prisma/client'
 
-    // Check if user profile is complete and verified
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    if (!user.phone || !user.roomNumber) {
-      return NextResponse.json({ 
-        error: 'Please complete your profile first' 
-      }, { status: 400 })
-    }
-
-   /* if (!user.emailVerified) {
-      return NextResponse.json({ 
-        error: 'Please verify your email first' 
-      }, { status: 400 })
-    }*/
-
-    const body = await request.json()
-    const { 
-      itemName, 
-      description, 
-      categoryId, 
-      rentPerDay, 
-      securityDeposit,
-      quantity 
-    } = body
-
-    // Validation
-    if (!itemName || !description || !categoryId || !rentPerDay) {
-      return NextResponse.json({ 
-        error: 'Item name, description, category, and rent per day are required' 
-      }, { status: 400 })
-    }
-
-    const parsedRentPerDay = parseFloat(rentPerDay)
-    const parsedSecurityDeposit = securityDeposit ? parseFloat(securityDeposit) : 0
-    const parsedQuantity = quantity ? parseInt(quantity) : 1
-
-    if (isNaN(parsedRentPerDay) || parsedRentPerDay <= 0) {
-      return NextResponse.json({ 
-        error: 'Invalid rent amount' 
-      }, { status: 400 })
-    }
-
-    // Calculate platform fee (20%) and final rent
-    const platformFee = parsedRentPerDay * 0.20
-    const finalRent = parsedRentPerDay + platformFee
-
-    // Create listing
-    const listing = await prisma.itemListing.create({
-      data: {
-        sellerId: user.id,
-        itemName,
-        description,
-        categoryId,
-        images: [], // We'll handle image upload later
-        listingType: 'RENT',
-        rentPerDay: parsedRentPerDay,
-        platformFee,
-        finalRent,
-        securityDeposit: parsedSecurityDeposit,
-        quantity: parsedQuantity,
-        status: 'PENDING',
-        sellerName: user.name,
-        sellerRoom: user.roomNumber,
-        sellerPhone: user.phone
-      },
-      include: {
-        category: true,
-        seller: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json(listing, { status: 201 })
-  } catch (error) {
-    console.error('Error creating listing:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 })
-  }
-}
-
-// GET - Fetch listings (we'll use this later for displaying in shop)
+// GET - Fetch listings with optional status filter
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
+    // Allow both authenticated users and admins
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -116,16 +20,44 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
+    // Type-safe status filter
+    const whereClause = status && status !== 'all' 
+      ? { status: status as ListingStatus } 
+      : {}
+
+    // For customers, only show LIVE listings
+    // For admins, show based on status filter
+    const finalWhereClause = session.user.role === 'ADMIN' 
+      ? whereClause 
+      : { status: 'LIVE' as ListingStatus, isAvailable: true }
+
     const listings = await prisma.itemListing.findMany({
-      where: {
-        ...(status && status !== 'all' ? { status } : {})
-      },
+      where: finalWhereClause,
       include: {
-        category: true,
         seller: {
           select: {
+            id: true,
             name: true,
-            email: true
+            email: true,
+            roomNumber: true,
+            phone: true
+          }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        rentalTransactions: {
+          where: {
+            status: 'ACTIVE'
+          },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            daysRented: true
           }
         }
       },
@@ -137,8 +69,105 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(listings)
   } catch (error) {
     console.error('Error fetching listings:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch listings' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Create new listing (authenticated users only)
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if user can list items
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { canListItems: true, emailVerified: true, name: true, roomNumber: true, phone: true }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before listing items' },
+        { status: 403 }
+      )
+    }
+
+    if (!user.canListItems) {
+      return NextResponse.json(
+        { error: 'You are not allowed to list items' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      itemName,
+      description,
+      categoryId,
+      images,
+      rentPerDay,
+      securityDeposit,
+      quantity
+    } = body
+
+    // Validate required fields
+    if (!itemName || !description || !categoryId || !rentPerDay) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Calculate platform fee (20%) and final rent
+    const platformFee = Math.round(rentPerDay * 0.20 * 100) / 100
+    const finalRent = rentPerDay + platformFee
+
+    // Create listing
+    const listing = await prisma.itemListing.create({
+      data: {
+        sellerId: session.user.id,
+        itemName,
+        description,
+        categoryId,
+        images: images || [],
+        rentPerDay: parseFloat(rentPerDay),
+        platformFee,
+        finalRent,
+        securityDeposit: securityDeposit ? parseFloat(securityDeposit) : null,
+        quantity: quantity || 1,
+        sellerName: user.name,
+        sellerRoom: user.roomNumber || 'N/A',
+        sellerPhone: user.phone || 'N/A',
+        status: 'PENDING' as ListingStatus
+      },
+      include: {
+        category: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(listing, { status: 201 })
+  } catch (error) {
+    console.error('Error creating listing:', error)
+    return NextResponse.json(
+      { error: 'Failed to create listing' },
+      { status: 500 }
+    )
   }
 }
